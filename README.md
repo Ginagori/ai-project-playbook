@@ -30,26 +30,47 @@ uv run python scripts/index_playbook.py
 
 ### 3. Configure Claude Code (Global)
 
-Add this to your **global** Claude Code settings at `~/.claude/settings.json` (Linux/Mac) or `C:\Users\<USER>\.claude\settings.json` (Windows):
+Add this to your **global** Claude Code config at `~/.claude.json` (Linux/Mac) or `C:\Users\<USER>\.claude.json` (Windows):
+
+> **Important:** The file is `.claude.json` in your home directory, NOT `.claude/settings.json`
 
 ```json
 {
   "mcpServers": {
     "playbook": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "mcp_server.playbook_mcp"],
+      "command": "C:\\path\\to\\ai-project-playbook\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_server.playbook_mcp"],
+      "cwd": "C:\\path\\to\\ai-project-playbook"
+    }
+  }
+}
+```
+
+For Linux/Mac:
+```json
+{
+  "mcpServers": {
+    "playbook": {
+      "command": "/path/to/ai-project-playbook/.venv/bin/python",
+      "args": ["-m", "mcp_server.playbook_mcp"],
       "cwd": "/path/to/ai-project-playbook"
     }
-  },
+  }
+}
+```
+
+> **Note:** Replace the paths with the actual path where you cloned this repo.
+>
+> After saving, **restart Claude Code** for the changes to take effect.
+
+Optionally, add permissions in `~/.claude/settings.json`:
+```json
+{
   "permissions": {
     "allow": ["mcp__playbook__*"]
   }
 }
 ```
-
-> **Note:** Replace `/path/to/ai-project-playbook` with the actual path where you cloned this repo.
->
-> After saving, **restart Claude Code** for the changes to take effect.
 
 ### 4. Use the Agent
 
