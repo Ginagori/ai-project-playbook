@@ -1,0 +1,11 @@
+# Netlify Redirects
+# Docs: https://docs.netlify.com/routing/redirects/
+
+# SPA routing - must be last
+/*    /index.html   200
+
+# API proxy (if you need it)
+/api/*  https://your-backend.railway.app/:splat  200
+
+# Custom domain redirect
+http://yourapp.netlify.app/*  https://www.yourapp.com/:splat  301!

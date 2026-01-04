@@ -1,0 +1,361 @@
+# ============================================
+# GITIGNORE TEMPLATE
+# ============================================
+# Prevents committing sensitive data and
+# unnecessary files to version control
+# ============================================
+
+# --------------------------------------------
+# ENVIRONMENT & SECRETS
+# --------------------------------------------
+
+# Environment variables (NEVER commit!)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# Secret files
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account.json
+secrets.yaml
+secrets.json
+
+# --------------------------------------------
+# DEPENDENCIES
+# --------------------------------------------
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Python package distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --------------------------------------------
+# IDE / EDITOR
+# --------------------------------------------
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ / PyCharm
+.idea/
+*.iml
+*.iws
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# --------------------------------------------
+# OPERATING SYSTEM
+# --------------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+
+# --------------------------------------------
+# BUILD & CACHE
+# --------------------------------------------
+
+# Next.js
+.next/
+out/
+.next/cache/
+
+# Vite
+dist/
+dist-ssr/
+
+# Nuxt.js
+.nuxt/
+.output/
+
+# Gatsby
+.cache/
+public/
+
+# General build directories
+build/
+dist/
+*.log
+
+# --------------------------------------------
+# TESTING & COVERAGE
+# --------------------------------------------
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.hypothesis/
+
+# Test artifacts
+.tox/
+.nox/
+
+# --------------------------------------------
+# DATABASES
+# --------------------------------------------
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL
+*.sql
+*.dump
+
+# MongoDB
+*.mongodb
+
+# --------------------------------------------
+# LOGS
+# --------------------------------------------
+
+# General logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Application logs
+*.log.*
+logs/
+
+# --------------------------------------------
+# TEMPORARY FILES
+# --------------------------------------------
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# --------------------------------------------
+# DOCKER & KUBERNETES
+# --------------------------------------------
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Kubernetes secrets
+*-secret.yaml
+*-secrets.yaml
+
+# --------------------------------------------
+# AI / ML SPECIFIC
+# --------------------------------------------
+
+# Model files (large binary files)
+*.pkl
+*.pickle
+*.h5
+*.pb
+*.onnx
+*.pt
+*.pth
+models/
+
+# Data files (unless explicitly needed in repo)
+data/
+datasets/
+*.csv
+*.parquet
+*.json
+*.jsonl
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Vector databases
+chroma_db/
+faiss_index/
+*.index
+
+# --------------------------------------------
+# DEPLOYMENT & CLOUD
+# --------------------------------------------
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Serverless
+.serverless/
+
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# --------------------------------------------
+# PACKAGE MANAGERS
+# --------------------------------------------
+
+# UV (Python)
+.venv/
+
+# Bun
+.bun/
+
+# Cargo (Rust)
+Cargo.lock
+target/
+
+# --------------------------------------------
+# MISC
+# --------------------------------------------
+
+# Compiled files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# SSL certificates (unless needed for dev)
+*.crt
+*.cer
+*.der
+
+# --------------------------------------------
+# CUSTOM PROJECT FILES
+# --------------------------------------------
+
+# Add your project-specific files here
+# Example:
+# /uploads/
+# /private/
+
+# ============================================
+# KEEP THESE FILES (negate ignore)
+# ============================================
+
+# Keep example files
+!.env.example
+!credentials.example.json
+
+# Keep README files everywhere
+!**/README.md
+
+# Keep configuration examples
+!config.example.json
+!docker-compose.example.yml
+
+# ============================================
+# SECURITY NOTES:
+# ============================================
+# 1. Review this file for your project needs
+# 2. Add project-specific sensitive files
+# 3. Never remove .env from gitignore!
+# 4. Use git-secrets or similar tools to scan
+# 5. Audit commits before pushing
+# ============================================

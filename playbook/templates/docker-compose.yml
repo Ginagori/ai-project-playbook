@@ -1,0 +1,437 @@
+# Docker Compose Template - Full Stack Development Environment
+#
+# This template provides a complete local development environment with:
+# - Backend API (FastAPI/Django/Flask)
+# - Frontend (React/Next.js/Vue)
+# - Database (PostgreSQL)
+# - Cache (Redis)
+# - Background Jobs (Celery)
+# - Monitoring (Prometheus + Grafana - optional)
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose logs -f backend    # View backend logs
+#   docker-compose down               # Stop all services
+#   docker-compose down -v            # Stop and remove volumes (reset DB)
+#
+# Customization:
+#   1. Replace [PROJECT_NAME] with your actual project name
+#   2. Uncomment services you need
+#   3. Update ports if they conflict with existing services
+#   4. Adjust environment variables for your stack
+
+version: '3.9'
+
+services:
+  # ============================================================================
+  # DATABASE - PostgreSQL
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: [PROJECT_NAME]_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
+      # Performance tuning (adjust based on your machine)
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Uncomment to run init scripts on first start
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  # ============================================================================
+  # CACHE - Redis
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: [PROJECT_NAME]_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  # ============================================================================
+  # BACKEND - FastAPI (Python)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # Use Dockerfile.dev for development (with hot reload)
+      # dockerfile: Dockerfile.dev
+    container_name: [PROJECT_NAME]_backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app_db}
+
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+
+      # App Config
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+
+      # CORS (for frontend)
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+
+      # External Services (add your API keys here or use .env)
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # STRIPE_API_KEY: ${STRIPE_API_KEY}
+    volumes:
+      # Mount source code for hot reload in development
+      - ./backend:/app
+      # Don't mount these (keep container versions)
+      - /app/__pycache__
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Alternative commands:
+    # For Django: python manage.py runserver 0.0.0.0:8000
+    # For Flask: flask run --host=0.0.0.0 --port=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app_network
+
+  # ============================================================================
+  # FRONTEND - React/Vite
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Use Dockerfile.dev for development (with hot reload)
+      # dockerfile: Dockerfile.dev
+    container_name: [PROJECT_NAME]_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      # Backend API URL (accessed from browser)
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Or for Next.js: NEXT_PUBLIC_API_URL
+
+      # Development mode
+      NODE_ENV: ${NODE_ENV:-development}
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app
+      # Don't mount these (keep container versions)
+      - /app/node_modules
+      - /app/.next
+      - /app/dist
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    # Alternative commands:
+    # For Next.js: npm run dev
+    # For Create React App: npm start
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+  # ============================================================================
+  # BACKGROUND JOBS - Celery Worker (uncomment if needed)
+  # ============================================================================
+  # celery_worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: [PROJECT_NAME]_celery_worker
+  #   restart: unless-stopped
+  #   environment:
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app_db}
+  #     REDIS_URL: redis://redis:6379/0
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   command: celery -A app.celery worker --loglevel=info
+  #   networks:
+  #     - app_network
+
+  # ============================================================================
+  # CELERY BEAT - Scheduled Tasks (uncomment if needed)
+  # ============================================================================
+  # celery_beat:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: [PROJECT_NAME]_celery_beat
+  #   restart: unless-stopped
+  #   environment:
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app_db}
+  #     REDIS_URL: redis://redis:6379/0
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   command: celery -A app.celery beat --loglevel=info
+  #   networks:
+  #     - app_network
+
+  # ============================================================================
+  # FLOWER - Celery Monitoring (uncomment if using Celery)
+  # ============================================================================
+  # flower:
+  #   image: mher/flower:latest
+  #   container_name: [PROJECT_NAME]_flower
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5555:5555"
+  #   environment:
+  #     CELERY_BROKER_URL: redis://redis:6379/0
+  #     FLOWER_PORT: 5555
+  #   depends_on:
+  #     - redis
+  #     - celery_worker
+  #   networks:
+  #     - app_network
+
+  # ============================================================================
+  # NGINX - Reverse Proxy (uncomment for production-like setup)
+  # ============================================================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: [PROJECT_NAME]_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   networks:
+  #     - app_network
+
+  # ============================================================================
+  # ADMINER - Database Admin UI (optional, lightweight alternative to pgAdmin)
+  # ============================================================================
+  # adminer:
+  #   image: adminer:latest
+  #   container_name: [PROJECT_NAME]_adminer
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     ADMINER_DEFAULT_SERVER: postgres
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - app_network
+
+  # ============================================================================
+  # MAILHOG - Email Testing (captures outgoing emails for development)
+  # ============================================================================
+  # mailhog:
+  #   image: mailhog/mailhog:latest
+  #   container_name: [PROJECT_NAME]_mailhog
+  #   restart: unless-stopped
+  #   ports:
+  #     - "1025:1025"  # SMTP server
+  #     - "8025:8025"  # Web UI
+  #   networks:
+  #     - app_network
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  app_network:
+    driver: bridge
+
+# ==============================================================================
+# USAGE EXAMPLES
+# ==============================================================================
+#
+# Start all services:
+#   docker-compose up -d
+#
+# Start specific services:
+#   docker-compose up -d postgres redis backend
+#
+# View logs:
+#   docker-compose logs -f                 # All services
+#   docker-compose logs -f backend         # Backend only
+#   docker-compose logs -f --tail=100      # Last 100 lines
+#
+# Execute commands in running container:
+#   docker-compose exec backend bash                    # Shell access
+#   docker-compose exec backend python manage.py migrate  # Run migration
+#   docker-compose exec postgres psql -U postgres        # PostgreSQL shell
+#
+# Rebuild services (after Dockerfile changes):
+#   docker-compose up -d --build
+#
+# Stop all services:
+#   docker-compose down
+#
+# Stop and remove volumes (reset database):
+#   docker-compose down -v
+#
+# View running services:
+#   docker-compose ps
+#
+# View service resource usage:
+#   docker stats
+#
+# ==============================================================================
+# ENVIRONMENT VARIABLES (.env file)
+# ==============================================================================
+#
+# Create a .env file in the same directory as docker-compose.yml:
+#
+# # Database
+# POSTGRES_USER=myuser
+# POSTGRES_PASSWORD=mypassword
+# POSTGRES_DB=mydb
+# POSTGRES_PORT=5432
+#
+# # Redis
+# REDIS_PORT=6379
+#
+# # Backend
+# BACKEND_PORT=8000
+# DEBUG=True
+# SECRET_KEY=your-secret-key-here
+#
+# # Frontend
+# FRONTEND_PORT=3000
+# VITE_API_URL=http://localhost:8000
+#
+# # External Services
+# OPENAI_API_KEY=sk-...
+# STRIPE_API_KEY=sk_test_...
+#
+# ==============================================================================
+# DOCKERFILE EXAMPLES
+# ==============================================================================
+#
+# Backend Dockerfile (./backend/Dockerfile):
+#
+# FROM python:3.13-slim
+# WORKDIR /app
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+# COPY . .
+# EXPOSE 8000
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+#
+# ---
+#
+# Frontend Dockerfile (./frontend/Dockerfile):
+#
+# FROM node:20-alpine
+# WORKDIR /app
+# COPY package*.json .
+# RUN npm ci
+# COPY . .
+# EXPOSE 3000
+# CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+#
+# ==============================================================================
+# TROUBLESHOOTING
+# ==============================================================================
+#
+# Issue: Port already in use
+# Solution: Change port in .env file or docker-compose.yml
+#   POSTGRES_PORT=5433  # Instead of 5432
+#
+# Issue: Database connection refused
+# Solution: Wait for healthcheck, or use depends_on with condition:
+#   depends_on:
+#     postgres:
+#       condition: service_healthy
+#
+# Issue: Changes not reflected
+# Solution: Rebuild container
+#   docker-compose up -d --build backend
+#
+# Issue: Out of disk space
+# Solution: Clean up Docker resources
+#   docker system prune -a --volumes  # WARNING: Removes all unused data
+#
+# Issue: Permission denied on volumes (Linux)
+# Solution: Fix ownership
+#   sudo chown -R $USER:$USER ./backend ./frontend
+#
+# ==============================================================================
+# PRODUCTION CONSIDERATIONS
+# ==============================================================================
+#
+# DO NOT use docker-compose for production deployment!
+# Use Kubernetes, AWS ECS, or similar orchestration.
+#
+# For production:
+# 1. Use environment-specific docker-compose files
+#    - docker-compose.yml (base)
+#    - docker-compose.prod.yml (production overrides)
+#    - Run: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# 2. Never use default passwords in production
+#
+# 3. Use secrets management (Docker Secrets, AWS Secrets Manager)
+#
+# 4. Don't mount source code volumes in production
+#
+# 5. Use multi-stage builds for smaller images
+#
+# 6. Enable HTTPS (use nginx with SSL certificates)
+#
+# 7. Set resource limits:
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '1'
+#          memory: 512M
+#
+# 8. Use image tags (not :latest)
+#
+# 9. Implement health checks for all services
+#
+# 10. Use proper logging drivers (journald, syslog, etc.)

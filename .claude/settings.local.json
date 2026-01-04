@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playbook": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.playbook_mcp"],
+      "cwd": "C:\\Users\\natal\\Proyectos\\ai-project-playbook"
+    }
+  },
+  "permissions": {
+    "allow": ["mcp__playbook__*"]
+  }
+}

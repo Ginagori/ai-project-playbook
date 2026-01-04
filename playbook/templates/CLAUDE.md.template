@@ -1,0 +1,829 @@
+# {{PROJECT_NAME}} - Development Rules
+
+**Generated:** {{GENERATION_DATE}}
+**Last Updated:** {{LAST_UPDATE_DATE}}
+
+---
+
+## 🎯 Project Overview
+
+**Description:** {{PROJECT_DESCRIPTION}}
+
+**Mission:** {{PROJECT_MISSION}}
+
+**Target Users:** {{TARGET_USERS}}
+
+---
+
+## 1️⃣ Core Principles
+
+### Non-Negotiable Rules
+
+1. **TYPE SAFETY IS NON-NEGOTIABLE**
+   - All functions MUST have explicit type hints/annotations
+   - {{BACKEND_LANGUAGE}}: Use strict type checking (mypy --strict / pyright)
+   - {{FRONTEND_LANGUAGE}}: TypeScript strict mode enabled
+   - NO `any` types without explicit justification in comments
+
+2. **KISS (Keep It Simple, Stupid)**
+   - Simple, readable solution > clever, complex solution
+   - If explaining the code requires more than 3 sentences, simplify it
+   - Prefer standard library / built-in features over external dependencies
+
+3. **YAGNI (You Aren't Gonna Need It)**
+   - Build for TODAY's requirements, not hypothetical future needs
+   - No premature optimization
+   - No "just in case" features
+
+4. **DRY (Don't Repeat Yourself) - But Wisely**
+   - Repeat code 2 times → OK
+   - Repeat code 3+ times → Extract to function/component
+   - BUT: Don't over-abstract. Premature abstraction is worse than duplication.
+
+5. **FAIL FAST & LOUD**
+   - Validate inputs at boundaries (API endpoints, function entry)
+   - Raise explicit errors with helpful messages
+   - NO silent failures or ignored exceptions
+
+6. **SECURITY BY DEFAULT**
+   - Input validation on ALL user inputs
+   - SQL injection prevention (use ORMs or parameterized queries)
+   - XSS prevention (sanitize outputs)
+   - Authentication on all protected routes
+   - NEVER log sensitive data (passwords, tokens, PII)
+
+---
+
+## 2️⃣ Tech Stack
+
+### Backend
+- **Framework:** {{BACKEND_FRAMEWORK}} {{BACKEND_VERSION}}
+- **Language:** {{BACKEND_LANGUAGE}} {{LANGUAGE_VERSION}}
+- **Package Manager:** {{BACKEND_PACKAGE_MANAGER}}
+- **Database:** {{DATABASE}} {{DATABASE_VERSION}}
+- **ORM:** {{ORM}} (if applicable)
+- **API Type:** {{API_TYPE}} (REST / GraphQL / gRPC)
+
+### Frontend
+- **Framework:** {{FRONTEND_FRAMEWORK}} {{FRONTEND_VERSION}}
+- **Language:** {{FRONTEND_LANGUAGE}} {{FRONTEND_LANGUAGE_VERSION}}
+- **Package Manager:** {{FRONTEND_PACKAGE_MANAGER}}
+- **UI Library:** {{UI_LIBRARY}} (if applicable)
+- **Styling:** {{STYLING_APPROACH}} (Tailwind / CSS Modules / Styled Components)
+- **State Management:** {{STATE_MANAGEMENT}} (if applicable)
+
+### DevOps & Tools
+- **Containerization:** {{CONTAINER_TECH}} (Docker / Podman)
+- **CI/CD:** {{CICD_PLATFORM}} (GitHub Actions / GitLab CI)
+- **Hosting:** {{HOSTING_PLATFORM}}
+  - Backend: {{BACKEND_HOSTING}}
+  - Frontend: {{FRONTEND_HOSTING}}
+  - Database: {{DATABASE_HOSTING}}
+- **Monitoring:** {{MONITORING_TOOLS}}
+
+### Testing
+- **Backend Tests:** {{BACKEND_TEST_FRAMEWORK}}
+- **Frontend Tests:** {{FRONTEND_TEST_FRAMEWORK}}
+- **E2E Tests:** {{E2E_TEST_FRAMEWORK}} (if applicable)
+- **Coverage Target:** >{{COVERAGE_TARGET}}%
+
+---
+
+## 3️⃣ Architecture
+
+### Architecture Pattern
+**Primary:** {{ARCHITECTURE_PATTERN}}
+
+{{#if ARCHITECTURE_PATTERN == "Vertical Slice Architecture"}}
+```
+src/
+├── features/
+│   ├── auth/
+│   │   ├── api.py / routes.ts
+│   │   ├── service.py / service.ts
+│   │   ├── models.py / types.ts
+│   │   └── tests/
+│   ├── products/
+│   │   ├── api.py
+│   │   ├── service.py
+│   │   ├── models.py
+│   │   └── tests/
+│   └── ...
+├── core/
+│   ├── database.py
+│   ├── config.py
+│   └── logging_config.py
+└── main.py
+```
+{{/if}}
+
+{{#if ARCHITECTURE_PATTERN == "Clean Architecture"}}
+```
+src/
+├── domain/           # Entities, business logic (framework-agnostic)
+├── application/      # Use cases, services
+├── infrastructure/   # Database, external APIs, frameworks
+└── presentation/     # Controllers, API routes, UI
+```
+{{/if}}
+
+{{#if ARCHITECTURE_PATTERN == "MVC"}}
+```
+src/
+├── models/          # Data models
+├── views/           # Templates, UI components
+├── controllers/     # Route handlers, business logic
+└── services/        # Reusable services
+```
+{{/if}}
+
+### Key Architectural Decisions
+
+**1. Multi-tenancy** (if applicable)
+- Strategy: {{MULTI_TENANCY_STRATEGY}} (Shared DB / Separate DBs / Hybrid)
+- Implementation: {{MULTI_TENANCY_IMPLEMENTATION}}
+
+**2. Authentication**
+- Method: {{AUTH_METHOD}} (JWT / Session / OAuth)
+- Storage: {{AUTH_STORAGE}} (HTTP-only cookies / localStorage / etc.)
+
+**3. State Management** (frontend)
+- Approach: {{STATE_APPROACH}}
+- Global state: {{GLOBAL_STATE_TOOL}}
+- Server state: {{SERVER_STATE_TOOL}} (React Query / SWR / Apollo)
+
+**4. Database Strategy**
+- Migrations: {{MIGRATION_TOOL}}
+- Seeding: {{SEED_STRATEGY}}
+- Backups: {{BACKUP_STRATEGY}}
+
+---
+
+## 4️⃣ Code Style
+
+### File Naming
+**Backend:**
+- Files: `snake_case.py`
+- Classes: `PascalCase`
+- Functions: `snake_case`
+- Constants: `UPPER_SNAKE_CASE`
+
+**Frontend:**
+- Components: `PascalCase.tsx`
+- Utilities: `camelCase.ts`
+- Types: `PascalCase` (interfaces, types)
+- Constants: `UPPER_SNAKE_CASE`
+
+### Directory Structure
+
+**Backend:**
+```
+backend/
+├── app/
+│   ├── api/              # API routes
+│   ├── core/             # Config, DB, logging
+│   ├── models/           # Database models
+│   ├── schemas/          # Pydantic schemas / DTO types
+│   ├── services/         # Business logic
+│   └── main.py           # App entry point
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+├── alembic/              # DB migrations (if using Alembic)
+├── pyproject.toml        # Dependencies
+└── README.md
+```
+
+**Frontend:**
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── ui/          # Reusable UI components (buttons, inputs)
+│   │   └── features/    # Feature-specific components
+│   ├── pages/           # Route pages
+│   ├── lib/             # Utilities, helpers
+│   ├── hooks/           # Custom React hooks (if applicable)
+│   ├── types/           # TypeScript types
+│   ├── styles/          # Global styles
+│   └── main.tsx         # App entry point
+├── public/
+├── package.json
+└── README.md
+```
+
+### Documentation Standards
+
+**Functions/Methods:**
+```python
+# Backend example (Python)
+def calculate_total(items: list[Item], tax_rate: float) -> Decimal:
+    """Calculate total price including tax.
+
+    Args:
+        items: List of items to calculate total for
+        tax_rate: Tax rate as decimal (e.g., 0.08 for 8%)
+
+    Returns:
+        Total price including tax
+
+    Raises:
+        ValueError: If tax_rate is negative
+    """
+    if tax_rate < 0:
+        raise ValueError("Tax rate cannot be negative")
+
+    subtotal = sum(item.price for item in items)
+    return subtotal * (1 + tax_rate)
+```
+
+```typescript
+// Frontend example (TypeScript)
+/**
+ * Calculate total price including tax
+ * @param items - List of items to calculate total for
+ * @param taxRate - Tax rate as decimal (e.g., 0.08 for 8%)
+ * @returns Total price including tax
+ * @throws {Error} If taxRate is negative
+ */
+function calculateTotal(items: Item[], taxRate: number): number {
+  if (taxRate < 0) {
+    throw new Error("Tax rate cannot be negative");
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+  return subtotal * (1 + taxRate);
+}
+```
+
+**Files:**
+- Every module MUST have a docstring/comment at the top explaining its purpose
+- Complex logic MUST have inline comments explaining WHY (not WHAT)
+
+### Import Organization
+
+**Backend (Python):**
+```python
+# Standard library
+import os
+from datetime import datetime
+
+# Third-party
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+# Local
+from app.core.database import get_db
+from app.models.user import User
+```
+
+**Frontend (TypeScript):**
+```typescript
+// React / framework
+import { useState, useEffect } from 'react';
+
+// Third-party libraries
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+
+// Internal - absolute imports via @/
+import { Button } from '@/components/ui/button';
+import type { User } from '@/types/user';
+import { api } from '@/lib/api-client';
+```
+
+---
+
+## 5️⃣ Testing
+
+### Testing Philosophy
+- **Test behavior, not implementation**
+- **Focus on critical paths first** (auth, payment, data integrity)
+- **Write tests BEFORE marking feature as done** (not "we'll add tests later")
+
+### Test Structure
+
+**Backend (pytest):**
+```python
+# tests/test_products.py
+import pytest
+from app.models.product import Product
+
+class TestProductCreation:
+    """Tests for product creation logic."""
+
+    def test_create_product_success(self, db_session, user):
+        """Should create product with valid data."""
+        product = Product(
+            name="Test Product",
+            price=9.99,
+            user_id=user.id,
+        )
+        db_session.add(product)
+        db_session.commit()
+
+        assert product.id is not None
+        assert product.name == "Test Product"
+
+    def test_create_product_invalid_price(self, db_session, user):
+        """Should raise error for negative price."""
+        with pytest.raises(ValueError):
+            Product(
+                name="Test",
+                price=-5.00,  # Invalid
+                user_id=user.id,
+            )
+```
+
+**Frontend (Vitest + Testing Library):**
+```typescript
+// src/components/ProductCard.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { ProductCard } from './ProductCard';
+
+describe('ProductCard', () => {
+  it('renders product name and price', () => {
+    const product = {
+      id: '1',
+      name: 'Test Product',
+      price: 9.99,
+    };
+
+    render(<ProductCard product={product} />);
+
+    expect(screen.getByText('Test Product')).toBeInTheDocument();
+    expect(screen.getByText('$9.99')).toBeInTheDocument();
+  });
+
+  it('calls onSelect when clicked', () => {
+    const onSelect = vi.fn();
+    const product = { id: '1', name: 'Test', price: 9.99 };
+
+    render(<ProductCard product={product} onSelect={onSelect} />);
+    screen.getByTestId('product-card').click();
+
+    expect(onSelect).toHaveBeenCalledWith('1');
+  });
+});
+```
+
+### Test Markers / Categories
+
+**Backend:**
+```python
+# pytest markers (in pytest.ini or pyproject.toml)
+[tool.pytest.ini_options]
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (DB, external APIs)",
+    "slow: Tests that take >1s",
+]
+
+# Usage
+@pytest.mark.unit
+def test_calculate_total():
+    ...
+
+@pytest.mark.integration
+def test_create_user_in_db(db_session):
+    ...
+```
+
+**Running tests:**
+```bash
+# All tests
+pytest
+
+# Only unit tests (fast)
+pytest -m unit
+
+# With coverage
+pytest --cov=app --cov-report=html
+```
+
+### Coverage Requirements
+- **Minimum:** {{COVERAGE_TARGET}}% overall
+- **Critical paths:** 100% (auth, payments, data mutations)
+- **Configuration files:** Exempt from coverage
+
+---
+
+## 6️⃣ Common Patterns
+
+### API Endpoint Pattern
+
+**Backend (FastAPI example):**
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.schemas.product import ProductCreate, ProductOut
+from app.core.auth import get_current_user
+from app.core.database import get_db
+
+router = APIRouter(prefix="/products", tags=["products"])
+
+@router.post("/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    product: ProductCreate,
+    db = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """Create a new product."""
+    # 1. Authorization check
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    # 2. Business logic (delegate to service)
+    new_product = product_service.create(db, product, current_user)
+
+    # 3. Return response
+    return new_product
+```
+
+### Data Fetching Pattern
+
+**Frontend (React Query example):**
+```typescript
+// src/hooks/useProducts.ts
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
+import type { Product } from '@/types/product';
+
+export function useProducts() {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const response = await api.get<Product[]>('/products');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// Usage in component
+function ProductList() {
+  const { data: products, isLoading, error } = useProducts();
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage error={error} />;
+
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Error Handling Pattern
+
+**Backend:**
+```python
+# Custom exceptions
+class AppException(Exception):
+    """Base exception for app errors."""
+    def __init__(self, message: str, status_code: int = 400):
+        self.message = message
+        self.status_code = status_code
+
+class NotFoundError(AppException):
+    def __init__(self, resource: str, id: str):
+        super().__init__(f"{resource} with id {id} not found", 404)
+
+# Exception handler
+@app.exception_handler(AppException)
+async def app_exception_handler(request, exc: AppException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.message},
+    )
+```
+
+**Frontend:**
+```typescript
+// Error boundary for React
+class ErrorBoundary extends React.Component<Props, State> {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log to monitoring service
+    logErrorToService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+### Logging Pattern
+
+**Backend:**
+```python
+import structlog
+
+logger = structlog.get_logger()
+
+def create_product(db, product_data, user):
+    logger.info(
+        "product.create.start",
+        user_id=user.id,
+        product_name=product_data.name,
+    )
+
+    try:
+        # Business logic
+        product = Product(**product_data.dict())
+        db.add(product)
+        db.commit()
+
+        logger.info(
+            "product.create.success",
+            product_id=product.id,
+            user_id=user.id,
+        )
+        return product
+    except Exception as e:
+        logger.error(
+            "product.create.error",
+            error=str(e),
+            user_id=user.id,
+        )
+        raise
+```
+
+**Frontend:**
+```typescript
+// src/lib/logger.ts
+const logger = {
+  info: (event: string, data?: Record<string, any>) => {
+    console.log(`[INFO] ${event}`, data);
+    // Send to monitoring service in production
+  },
+  error: (event: string, error: Error, data?: Record<string, any>) => {
+    console.error(`[ERROR] ${event}`, error, data);
+    // Send to error tracking (Sentry, etc.)
+  },
+};
+
+// Usage
+logger.info('product.fetch.start', { filters });
+logger.error('product.fetch.error', error, { filters });
+```
+
+---
+
+## 7️⃣ Development Commands
+
+### Backend
+```bash
+# Development server
+{{BACKEND_DEV_COMMAND}}
+
+# Run tests
+{{BACKEND_TEST_COMMAND}}
+
+# Linting
+{{BACKEND_LINT_COMMAND}}
+
+# Type checking
+{{BACKEND_TYPE_CHECK_COMMAND}}
+
+# Database migrations
+{{BACKEND_MIGRATION_COMMAND}}
+```
+
+### Frontend
+```bash
+# Development server
+{{FRONTEND_DEV_COMMAND}}
+
+# Build for production
+{{FRONTEND_BUILD_COMMAND}}
+
+# Run tests
+{{FRONTEND_TEST_COMMAND}}
+
+# Linting
+{{FRONTEND_LINT_COMMAND}}
+
+# Type checking
+{{FRONTEND_TYPE_CHECK_COMMAND}}
+```
+
+### Full Stack
+```bash
+# Start all services (Docker Compose)
+{{DOCKER_UP_COMMAND}}
+
+# Run validation pyramid
+{{VALIDATION_COMMAND}}
+
+# Deploy to staging
+{{DEPLOY_STAGING_COMMAND}}
+```
+
+---
+
+## 8️⃣ Environment Variables & Secrets
+
+### Environment Variables Structure
+
+**File:** `.env` (never commit!) / `.env.example` (commit as template)
+
+```bash
+# Copy .env.example to .env and fill in real values
+cp .env.example .env
+```
+
+### Required Variables
+
+**Application:**
+```bash
+NODE_ENV={{NODE_ENV_DEFAULT}}
+APP_URL={{APP_URL_DEFAULT}}
+API_URL={{API_URL_DEFAULT}}
+```
+
+**Database:**
+```bash
+DATABASE_URL={{DATABASE_URL_EXAMPLE}}
+```
+
+**Authentication:**
+```bash
+JWT_SECRET={{JWT_SECRET_EXAMPLE}}
+JWT_EXPIRATION={{JWT_EXPIRATION_DEFAULT}}
+```
+
+**External Services:**
+```bash
+# AI / LLM (if using)
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+
+# Email (if using)
+SENDGRID_API_KEY=
+RESEND_API_KEY=
+
+# Payments (if using)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# Storage (if using)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+S3_BUCKET_NAME=
+```
+
+### Loading Environment Variables
+
+**Backend ({{BACKEND_FRAMEWORK}}):**
+```{{BACKEND_LANGUAGE}}
+{{ENV_LOADING_BACKEND_EXAMPLE}}
+```
+
+**Frontend ({{FRONTEND_FRAMEWORK}}):**
+```{{FRONTEND_LANGUAGE}}
+{{ENV_LOADING_FRONTEND_EXAMPLE}}
+```
+
+### Security Rules for Environment Variables
+
+1. **NEVER commit .env files**
+   - Use `.env.example` with placeholder values
+   - Add `.env` to `.gitignore` (already included)
+   - Use git pre-commit hooks to scan for secrets
+
+2. **Prefix public variables** (frontend-safe)
+   - Next.js: `NEXT_PUBLIC_*`
+   - Vite: `VITE_*`
+   - Create React App: `REACT_APP_*`
+   - **Never prefix secrets!** (API keys, passwords, tokens)
+
+3. **Rotate secrets regularly**
+   - API keys: Every 90 days minimum
+   - JWT secrets: Every 6 months
+   - Use secret management tools in production
+
+4. **Different values per environment**
+   - Development: Local/test values
+   - Staging: Separate API keys
+   - Production: Production-only secrets
+
+5. **Production secret management**
+   - Use managed secret services:
+     - AWS Secrets Manager
+     - Google Secret Manager
+     - Azure Key Vault
+     - HashiCorp Vault
+     - Doppler
+   - Never store in plain text files
+
+### Accessing Secrets in Code
+
+**DO:**
+```{{BACKEND_LANGUAGE}}
+# Load from environment
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("OPENAI_API_KEY not set")
+```
+
+**DON'T:**
+```{{BACKEND_LANGUAGE}}
+# NEVER hardcode secrets!
+api_key = "sk-1234567890abcdef"  # ❌ WRONG!
+```
+
+### Common Environment Variables by Project Type
+
+**Web App:**
+- `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`
+
+**API Backend:**
+- `DATABASE_URL`, `API_KEY`, `RATE_LIMIT_MAX`
+
+**AI Agent:**
+- `OPENAI_API_KEY`, `PINECONE_API_KEY`, `DATABASE_URL`
+
+**SaaS Multi-tenant:**
+- `DATABASE_URL`, `STRIPE_SECRET_KEY`, `SENDGRID_API_KEY`
+
+### Validation on Startup
+
+**Validate required vars exist:**
+```{{BACKEND_LANGUAGE}}
+{{ENV_VALIDATION_EXAMPLE}}
+```
+
+---
+
+## 9️⃣ AI Assistant Instructions
+
+### When Implementing Features
+
+1. **ALWAYS read this CLAUDE.md file first** before writing code
+2. **Follow the architecture pattern** defined in Section 3
+3. **Write tests** BEFORE marking feature as complete
+4. **Use the common patterns** from Section 6
+5. **Run validation** before suggesting code is done:
+   ```bash
+   # Validation checklist
+   {{BACKEND_LINT_COMMAND}}
+   {{BACKEND_TYPE_CHECK_COMMAND}}
+   {{BACKEND_TEST_COMMAND}}
+   {{FRONTEND_LINT_COMMAND}}
+   {{FRONTEND_TYPE_CHECK_COMMAND}}
+   {{FRONTEND_TEST_COMMAND}}
+   ```
+
+### When Planning
+
+1. **ALWAYS break down features** into:
+   - Backend changes (models, API, services, tests)
+   - Frontend changes (components, pages, hooks, tests)
+   - Database changes (migrations if needed)
+   - Documentation updates
+
+2. **Consider**:
+   - Where does this fit in the architecture?
+   - What existing patterns can I reuse?
+   - What tests are needed?
+   - Any security implications?
+
+### When Reviewing Code
+
+1. **Check against Core Principles** (Section 1)
+2. **Verify type safety** (no `any`, all functions typed)
+3. **Ensure tests exist** and are meaningful
+4. **Check for security issues** (SQL injection, XSS, auth bypass)
+5. **Validate against code style** (Section 4)
+
+---
+
+## 🔟 Project-Specific Notes
+
+### Known Issues / Tech Debt
+{{TECH_DEBT_NOTES}}
+
+### Deployment Notes
+{{DEPLOYMENT_NOTES}}
+
+### Monitoring & Observability
+{{MONITORING_NOTES}}
+
+---
+
+**Last Updated:** {{LAST_UPDATE_DATE}}
+**Maintained By:** {{MAINTAINER}}
