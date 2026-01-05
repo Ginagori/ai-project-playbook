@@ -129,6 +129,10 @@ class SupervisorPattern:
             success=False,
             output="Supervisor max iterations reached",
             errors=[f"Exceeded {self.max_iterations} iterations"],
+            metadata={
+                "iterations": iteration,
+                "history": self._execution_log,
+            },
         )
 
     def _default_decision(
@@ -210,8 +214,9 @@ class SupervisorPattern:
             data=combined_data,
             errors=all_errors,
             metadata={
+                "iterations": len(context.previous_results),
                 "agents_used": len(context.previous_results),
-                "execution_log": self._execution_log,
+                "history": self._execution_log,
             },
         )
 

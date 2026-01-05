@@ -3,8 +3,10 @@ AI Project Playbook MCP Server
 
 Exposes the AI Project Playbook Agent as an MCP server for Claude Code integration.
 Uses LangGraph orchestrator for phase management.
+Includes Agent Factory for multi-agent patterns and specialized agents.
 """
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -16,6 +18,15 @@ from agent.orchestrator import (
     run_orchestrator,
 )
 from agent.tools.playbook_rag import search_playbook as rag_search
+from agent.factory.base import AgentContext
+from agent.factory.playbook_agents import (
+    default_pipeline,
+    default_router,
+    default_supervisor,
+    create_code_review_parallel,
+    run_development_task,
+    run_feature_pipeline,
+)
 
 # Initialize MCP server
 mcp = FastMCP("playbook")
@@ -299,6 +310,315 @@ async def get_prd(session_id: str) -> str:
 
 *Copy this content to your project's docs/PRD.md file.*
 """
+
+
+# =============================================================================
+# Agent Factory Tools - Specialized Agents
+# =============================================================================
+
+
+@mcp.tool(name="playbook_run_task")
+async def run_task(task: str) -> str:
+    """
+    Run a development task through the appropriate specialized agent.
+
+    The task is automatically routed to the best agent based on keywords:
+    - Research tasks: "find", "search", "lookup", "research", "what is", "how to"
+    - Planning tasks: "plan", "design", "architect", "break down", "outline"
+    - Coding tasks: "implement", "write", "code", "create", "build", "fix"
+    - Review tasks: "review", "check", "analyze", "audit", "inspect"
+    - Testing tasks: "test", "verify", "validate", "coverage"
+
+    Args:
+        task: Description of the task to perform
+
+    Returns:
+        Result from the specialized agent
+    """
+    result = await run_development_task(task)
+
+    output = f"""## Task Result
+
+**Agent Used**: {result.get("agent_used", "unknown")}
+**Success**: {"✅" if result["success"] else "❌"}
+
+### Output
+
+{result["output"]}
+"""
+
+    if result.get("errors"):
+        output += f"\n### Errors\n"
+        for error in result["errors"]:
+            output += f"- {error}\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_run_pipeline")
+async def run_pipeline(feature: str) -> str:
+    """
+    Run a feature through the full development pipeline.
+
+    Pipeline stages: Research → Plan → Code → Review → Test
+
+    Each stage builds on the previous one's output. The pipeline stops
+    if any stage fails.
+
+    Args:
+        feature: Description of the feature to implement
+
+    Returns:
+        Results from all pipeline stages
+    """
+    result = await run_feature_pipeline(feature)
+
+    output = f"""## Pipeline Result: {feature}
+
+**Success**: {"✅" if result["success"] else "❌"}
+**Stages Completed**: {result.get("stages_completed", 0)}/5
+
+### Final Output
+
+{result["output"]}
+
+### Execution Log
+"""
+
+    for log_entry in result.get("execution_log", []):
+        stage = log_entry.get("stage", "unknown")
+        success = "✅" if log_entry.get("success") else "❌"
+        output += f"- {success} {stage}\n"
+
+    if result.get("errors"):
+        output += f"\n### Errors\n"
+        for error in result["errors"]:
+            output += f"- {error}\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_code_review")
+async def code_review(code: str, code_type: str = "generic") -> str:
+    """
+    Run parallel code reviews on provided code.
+
+    Runs multiple reviewers in parallel:
+    - Quality Reviewer: Code quality, naming, structure
+    - Security Reviewer: Security vulnerabilities, best practices
+
+    Args:
+        code: The code to review
+        code_type: Type of code - "api_endpoint", "service", "component", "test", "generic"
+
+    Returns:
+        Combined review results from all reviewers
+    """
+    parallel_reviewers = create_code_review_parallel()
+
+    context = AgentContext(
+        task=f"Review this {code_type} code",
+        shared_state={
+            "generated_code": code,
+            "code_type": code_type,
+        }
+    )
+
+    result = await parallel_reviewers.execute(context)
+
+    output = f"""## Parallel Code Review
+
+**Success**: {"✅" if result.success else "❌"}
+
+### Review Results
+
+{result.output}
+"""
+
+    if result.errors:
+        output += f"\n### Errors\n"
+        for error in result.errors:
+            output += f"- {error}\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_supervised_task")
+async def supervised_task(task: str, max_iterations: int = 5) -> str:
+    """
+    Run a task with the supervisor pattern.
+
+    The supervisor coordinates multiple agents dynamically based on
+    task requirements. It decides which agent to use at each step
+    and orchestrates the workflow.
+
+    Available agents:
+    - researcher: Searches playbook for information
+    - planner: Creates implementation plans
+    - coder: Generates code
+    - reviewer: Reviews code quality
+    - tester: Generates tests
+
+    Args:
+        task: The task to complete
+        max_iterations: Maximum number of agent invocations (default 5)
+
+    Returns:
+        Final result after supervisor coordination
+    """
+    # Configure supervisor with max iterations
+    default_supervisor.max_iterations = max_iterations
+
+    context = AgentContext(task=task)
+    result = await default_supervisor.execute(context)
+
+    output = f"""## Supervised Task Result
+
+**Success**: {"✅" if result.success else "❌"}
+**Iterations**: {result.metadata.get("iterations", 0)}/{max_iterations}
+
+### Output
+
+{result.output}
+
+### Execution History
+"""
+
+    for entry in result.metadata.get("history", []):
+        agent = entry.get("agent", "unknown")
+        success = "✅" if entry.get("success") else "❌"
+        output += f"- {success} {agent}: {entry.get('task', '')[:50]}...\n"
+
+    if result.errors:
+        output += f"\n### Errors\n"
+        for error in result.errors:
+            output += f"- {error}\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_research")
+async def research_topic(topic: str) -> str:
+    """
+    Research a topic using the Researcher agent.
+
+    Searches the playbook for relevant information and synthesizes findings.
+
+    Args:
+        topic: What to research (e.g., "authentication best practices", "deployment strategies")
+
+    Returns:
+        Research findings with playbook references
+    """
+    from agent.specialized import ResearcherAgent
+
+    researcher = ResearcherAgent()
+    context = AgentContext(task=topic)
+    result = await researcher.execute(context)
+
+    output = f"""## Research: {topic}
+
+{result.output}
+"""
+
+    if result.data.get("sources"):
+        output += "\n### Sources\n"
+        for source in result.data["sources"]:
+            output += f"- {source}\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_plan_feature")
+async def plan_feature(feature: str) -> str:
+    """
+    Create an implementation plan for a feature.
+
+    Generates a detailed, phased plan with:
+    - Step-by-step tasks
+    - Files to create/modify
+    - Validation commands
+    - Testing requirements
+
+    Args:
+        feature: The feature to plan (e.g., "user authentication", "API endpoints")
+
+    Returns:
+        Detailed implementation plan
+    """
+    from agent.specialized import PlannerAgent
+
+    planner = PlannerAgent()
+    context = AgentContext(task=feature)
+    result = await planner.execute(context)
+
+    return result.output
+
+
+@mcp.tool(name="playbook_generate_code")
+async def generate_code(task: str, code_type: str = "generic") -> str:
+    """
+    Generate code for a specific task.
+
+    Supported code types:
+    - api_endpoint: FastAPI router with Pydantic schemas
+    - data_model: Pydantic models with base entity
+    - service: Service class with repository pattern
+    - component: React component with TypeScript
+    - test: pytest test class
+    - generic: Basic Python script
+
+    Args:
+        task: What to implement (e.g., "create user registration endpoint")
+        code_type: Type of code to generate
+
+    Returns:
+        Generated code with implementation notes
+    """
+    from agent.specialized import CoderAgent
+
+    coder = CoderAgent()
+    context = AgentContext(
+        task=task,
+        shared_state={"code_type": code_type}
+    )
+    result = await coder.execute(context)
+
+    return result.output
+
+
+@mcp.tool(name="playbook_generate_tests")
+async def generate_tests(code: str, code_type: str = "generic") -> str:
+    """
+    Generate tests for provided code.
+
+    Creates appropriate tests based on code type:
+    - api_endpoint: HTTP client tests with pytest-asyncio
+    - service: Unit tests with mocks
+    - data_model: Model validation tests
+    - component: React Testing Library tests
+    - generic: Basic pytest tests
+
+    Args:
+        code: The code to test
+        code_type: Type of code being tested
+
+    Returns:
+        Generated test code with validation commands
+    """
+    from agent.specialized import TesterAgent
+
+    tester = TesterAgent()
+    context = AgentContext(
+        task=f"Generate tests for {code_type} code",
+        shared_state={
+            "generated_code": code,
+            "code_type": code_type,
+        }
+    )
+    result = await tester.execute(context)
+
+    return result.output
 
 
 def main():

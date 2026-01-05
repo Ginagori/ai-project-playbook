@@ -118,6 +118,8 @@ ai-project-playbook/
 
 ## MCP Tools
 
+### Project Management Tools
+
 | Tool | Description |
 |------|-------------|
 | `playbook_start_project` | Start a new project with an objective |
@@ -126,6 +128,21 @@ ai-project-playbook/
 | `playbook_search` | Search the playbook |
 | `playbook_get_status` | Get project status |
 | `playbook_list_sessions` | List all active sessions |
+| `playbook_get_claude_md` | Get generated CLAUDE.md |
+| `playbook_get_prd` | Get generated PRD |
+
+### Agent Factory Tools
+
+| Tool | Description |
+|------|-------------|
+| `playbook_run_task` | Route task to best agent automatically |
+| `playbook_run_pipeline` | Run full pipeline: Research→Plan→Code→Review→Test |
+| `playbook_code_review` | Run parallel code reviews (quality + security) |
+| `playbook_supervised_task` | Run with supervisor orchestrating multiple agents |
+| `playbook_research` | Research a topic using the playbook |
+| `playbook_plan_feature` | Create implementation plan for a feature |
+| `playbook_generate_code` | Generate code (API, service, component, etc.) |
+| `playbook_generate_tests` | Generate tests for code |
 
 ## Supported Project Types
 
@@ -143,12 +160,33 @@ ai-project-playbook/
 | Scale | 10K-100K | $8K-15K | Netlify + GKE |
 | Enterprise | 100K+ | $50K+ | Multi-cloud |
 
+## Agent Factory
+
+The Agent Factory provides 6 multi-agent patterns:
+
+| Pattern | Use Case |
+|---------|----------|
+| **Sequential** | Pipeline workflows (Research→Plan→Code→Review→Test) |
+| **Parallel** | Fan-out/fan-in (multiple reviewers in parallel) |
+| **Supervisor** | Dynamic orchestration based on task state |
+| **Router** | Cost-optimized routing to specialized agents |
+| **Handoff** | Complete delegation to another agent |
+| **Agent-as-Tool** | Wrap agent as callable tool |
+
+### Specialized Agents
+
+- **Researcher**: Searches playbook for relevant information
+- **Planner**: Creates detailed implementation plans
+- **Coder**: Generates code (API, service, component, tests)
+- **Reviewer**: Reviews code for quality, security, patterns
+- **Tester**: Generates tests and validation commands
+
 ## Future Plans
 
 - [ ] Supabase integration for persistent state
 - [ ] RAG with pgvector for semantic search
 - [ ] Multi-user support with RLS
-- [ ] Agent Factory for creating specialized agents
+- [x] Agent Factory for creating specialized agents ✓
 - [ ] Meta-Learning from completed projects
 
 ## License
