@@ -98,6 +98,9 @@ class ProjectState(BaseModel):
     files_created: list[str] = Field(default_factory=list)
     validation_results: dict[str, Any] = Field(default_factory=dict)
 
+    # Deployment configs
+    deployment_configs: dict[str, str] = Field(default_factory=dict)
+
     # User interaction
     needs_user_input: bool = False
     pending_question: str | None = None
