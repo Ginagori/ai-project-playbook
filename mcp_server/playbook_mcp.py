@@ -27,6 +27,15 @@ from agent.factory.playbook_agents import (
     run_development_task,
     run_feature_pipeline,
 )
+from agent.meta_learning import (
+    capture_project_outcome,
+    find_similar_projects,
+    get_recommendations,
+    suggest_tech_stack,
+    get_pitfalls_to_avoid,
+    get_lessons_db,
+    PatternCategory,
+)
 
 # Initialize MCP server
 mcp = FastMCP("playbook")
@@ -619,6 +628,314 @@ async def generate_tests(code: str, code_type: str = "generic") -> str:
     result = await tester.execute(context)
 
     return result.output
+
+
+# =============================================================================
+# Meta-Learning Tools - Learn from Past Projects
+# =============================================================================
+
+
+@mcp.tool(name="playbook_complete_project")
+async def complete_project(session_id: str, user_rating: int = 4, notes: str = "") -> str:
+    """
+    Mark a project as complete and capture lessons learned.
+
+    This triggers the meta-learning system to:
+    - Analyze what worked and what didn't
+    - Extract patterns for future projects
+    - Store the outcome for recommendations
+
+    Args:
+        session_id: The session ID to complete
+        user_rating: Rating from 1-5 (5 = excellent)
+        notes: Optional notes about the project
+
+    Returns:
+        Summary of captured lessons
+    """
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found."
+
+    state = sessions[session_id]
+    project = state.project
+
+    # Capture outcome
+    outcome = capture_project_outcome(project)
+
+    # Update with user feedback
+    outcome.user_rating = user_rating
+    outcome.user_notes = notes if notes else None
+
+    db = get_lessons_db()
+    db.add_outcome(outcome)
+
+    output = f"""## Project Completed: {session_id}
+
+### Outcome Summary
+- **Result**: {outcome.outcome.value}
+- **Success Score**: {outcome.success_score:.0%}
+- **Features Completed**: {len(outcome.features_completed)}/{len(outcome.features_planned)}
+- **Your Rating**: {"⭐" * user_rating}
+
+### What Worked
+"""
+    for item in outcome.what_worked:
+        output += f"- ✅ {item}\n"
+
+    output += "\n### What Didn't Work\n"
+    for item in outcome.what_didnt_work:
+        output += f"- ❌ {item}\n"
+
+    # Get stats
+    stats = db.get_stats()
+    output += f"""
+### Meta-Learning Stats
+- **Total Lessons Captured**: {stats['total_lessons']}
+- **Projects Analyzed**: {stats['total_outcomes']}
+- **Overall Success Rate**: {stats['success_rate']:.0%}
+
+_Lessons from this project will improve recommendations for future projects._
+"""
+
+    return output
+
+
+@mcp.tool(name="playbook_get_recommendations")
+async def get_project_recommendations(
+    project_type: str,
+    tech_stack: str = "",
+    phase: str = "",
+) -> str:
+    """
+    Get recommendations based on lessons from past projects.
+
+    Args:
+        project_type: Type of project (saas, api, agent, multi_agent)
+        tech_stack: Comma-separated list of technologies (e.g., "Next.js, FastAPI, Supabase")
+        phase: Current phase (discovery, planning, roadmap, implementation, deployment)
+
+    Returns:
+        Personalized recommendations based on learned patterns
+    """
+    tech_list = [t.strip() for t in tech_stack.split(",") if t.strip()] if tech_stack else []
+
+    recommendations = get_recommendations(
+        project_type=project_type,
+        tech_stack=tech_list,
+        current_phase=phase if phase else None,
+    )
+
+    output = f"""## Recommendations for {project_type.title()} Project
+
+Based on patterns from previous projects:
+
+"""
+    for i, rec in enumerate(recommendations, 1):
+        output += f"{i}. {rec}\n\n"
+
+    # Add pitfalls
+    pitfalls = get_pitfalls_to_avoid(project_type, tech_list)
+    if pitfalls:
+        output += "### Pitfalls to Avoid\n\n"
+        for pitfall in pitfalls[:3]:
+            output += f"{pitfall}\n\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_find_similar")
+async def find_similar(
+    project_type: str,
+    tech_stack: str = "",
+    limit: int = 3,
+) -> str:
+    """
+    Find similar past projects to learn from.
+
+    Args:
+        project_type: Type of project to match
+        tech_stack: Comma-separated list of technologies
+        limit: Maximum projects to return (default 3)
+
+    Returns:
+        Similar projects with their outcomes and lessons
+    """
+    tech_list = [t.strip() for t in tech_stack.split(",") if t.strip()] if tech_stack else []
+
+    similar = find_similar_projects(
+        project_type=project_type,
+        tech_stack=tech_list,
+        limit=limit,
+    )
+
+    if not similar:
+        return f"""## No Similar Projects Found
+
+No past projects match your criteria. This will be the first {project_type} project tracked!
+
+As you complete projects, the system will learn patterns and provide better recommendations.
+"""
+
+    output = f"""## Similar Past Projects
+
+Found {len(similar)} similar projects:
+
+"""
+    for i, proj in enumerate(similar, 1):
+        stars = "⭐" * int(proj["success_score"] * 5)
+        output += f"""### {i}. {proj['objective'][:50]}...
+
+- **Type**: {proj['project_type']}
+- **Tech Stack**: {', '.join(v for v in proj['tech_stack'].values() if v)}
+- **Outcome**: {proj['outcome']} {stars}
+- **Similarity**: {proj['similarity']:.0%}
+
+**What Worked**: {', '.join(proj['what_worked']) if proj['what_worked'] else 'N/A'}
+
+**What Didn't Work**: {', '.join(proj['what_didnt_work']) if proj['what_didnt_work'] else 'N/A'}
+
+---
+
+"""
+
+    return output
+
+
+@mcp.tool(name="playbook_suggest_stack")
+async def suggest_stack(project_type: str) -> str:
+    """
+    Get tech stack suggestions based on successful past projects.
+
+    Args:
+        project_type: Type of project (saas, api, agent, multi_agent)
+
+    Returns:
+        Recommended technologies for each layer
+    """
+    suggestions = suggest_tech_stack(project_type)
+
+    output = f"""## Suggested Tech Stack for {project_type.title()}
+
+Based on successful past projects:
+
+### Frontend
+"""
+    if suggestions["frontend"]:
+        for i, tech in enumerate(suggestions["frontend"][:3], 1):
+            output += f"{i}. {tech}\n"
+    else:
+        output += "_No frontend needed for this project type_\n"
+
+    output += "\n### Backend\n"
+    for i, tech in enumerate(suggestions["backend"][:3], 1):
+        output += f"{i}. {tech}\n"
+
+    output += "\n### Database\n"
+    for i, tech in enumerate(suggestions["database"][:3], 1):
+        output += f"{i}. {tech}\n"
+
+    output += """
+---
+
+_Suggestions are based on patterns from successfully completed projects._
+_Your specific requirements may warrant different choices._
+"""
+
+    return output
+
+
+@mcp.tool(name="playbook_learning_stats")
+async def learning_stats() -> str:
+    """
+    Get statistics about the meta-learning system.
+
+    Returns:
+        Summary of lessons learned and patterns captured
+    """
+    db = get_lessons_db()
+    stats = db.get_stats()
+
+    output = f"""## Meta-Learning Statistics
+
+### Overview
+- **Total Lessons Captured**: {stats['total_lessons']}
+- **Projects Analyzed**: {stats['total_outcomes']}
+- **Overall Success Rate**: {stats['success_rate']:.0%}
+
+### Lessons by Category
+"""
+    for category, count in stats['lessons_by_category'].items():
+        if count > 0:
+            output += f"- **{category.replace('_', ' ').title()}**: {count} lessons\n"
+
+    if stats['top_lessons']:
+        output += "\n### Most Common Patterns\n"
+        for lesson in stats['top_lessons']:
+            output += f"- {lesson['title']} (seen {lesson['frequency']}x)\n"
+    else:
+        output += "\n_No patterns captured yet. Complete some projects to start learning!_\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_add_lesson")
+async def add_lesson(
+    title: str,
+    description: str,
+    recommendation: str,
+    category: str = "workflow",
+    project_type: str = "",
+    tags: str = "",
+) -> str:
+    """
+    Manually add a lesson learned.
+
+    Args:
+        title: Short title for the lesson
+        description: What happened or was observed
+        recommendation: What to do differently
+        category: Category (tech_stack, architecture, workflow, tooling, testing, deployment, pitfall)
+        project_type: Where this applies (saas, api, agent, multi_agent)
+        tags: Comma-separated tags
+
+    Returns:
+        Confirmation of added lesson
+    """
+    from agent.meta_learning.models import LessonLearned
+
+    try:
+        cat = PatternCategory(category)
+    except ValueError:
+        return f"Invalid category '{category}'. Valid options: {', '.join(c.value for c in PatternCategory)}"
+
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    project_types = [project_type] if project_type else []
+
+    lesson = LessonLearned(
+        category=cat,
+        title=title,
+        description=description,
+        context="Manually added lesson",
+        recommendation=recommendation,
+        confidence=0.7,
+        project_types=project_types,
+        tags=tag_list,
+    )
+
+    db = get_lessons_db()
+    db.add_lesson(lesson)
+
+    return f"""## Lesson Added
+
+**{title}**
+
+- **Category**: {category}
+- **Description**: {description}
+- **Recommendation**: {recommendation}
+- **Tags**: {', '.join(tag_list) if tag_list else 'None'}
+
+_This lesson will be used in future recommendations._
+"""
 
 
 def main():

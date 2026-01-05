@@ -1,0 +1,23 @@
+{
+  "lessons": [
+    {
+      "id": "ae86b567-64f5-40a6-aec7-bfbdd1bca5e9",
+      "category": "testing",
+      "title": "Test Lesson",
+      "description": "Testing the meta-learning system",
+      "context": "Manually added lesson",
+      "recommendation": "Always test your features",
+      "confidence": 0.7,
+      "frequency": 1,
+      "project_types": [],
+      "tech_stacks": [],
+      "tags": [
+        "test",
+        "demo"
+      ],
+      "created_at": "2026-01-05T22:36:32.294954",
+      "updated_at": "2026-01-05T22:36:32.294954"
+    }
+  ],
+  "outcomes": []
+}

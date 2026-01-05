@@ -108,7 +108,9 @@ ai-project-playbook/
 │   ├── models/             # Pydantic models
 │   ├── phases/             # Phase implementations
 │   ├── tools/              # Agent tools
-│   └── factory/            # Multi-agent patterns
+│   ├── factory/            # Multi-agent patterns
+│   ├── specialized/        # Specialized agents (Researcher, Coder, etc.)
+│   └── meta_learning/      # Pattern capture & recommendations
 ├── mcp_server/             # MCP Server
 │   └── playbook_mcp.py     # Main server
 ├── scripts/                # Utilities
@@ -143,6 +145,17 @@ ai-project-playbook/
 | `playbook_plan_feature` | Create implementation plan for a feature |
 | `playbook_generate_code` | Generate code (API, service, component, etc.) |
 | `playbook_generate_tests` | Generate tests for code |
+
+### Meta-Learning Tools
+
+| Tool | Description |
+|------|-------------|
+| `playbook_complete_project` | Complete a project and capture lessons learned |
+| `playbook_get_recommendations` | Get recommendations based on past projects |
+| `playbook_find_similar` | Find similar past projects |
+| `playbook_suggest_stack` | Get tech stack suggestions for project type |
+| `playbook_learning_stats` | View meta-learning database statistics |
+| `playbook_add_lesson` | Manually add a lesson learned |
 
 ## Supported Project Types
 
@@ -181,13 +194,29 @@ The Agent Factory provides 6 multi-agent patterns:
 - **Reviewer**: Reviews code for quality, security, patterns
 - **Tester**: Generates tests and validation commands
 
+## Meta-Learning
+
+The agent learns from completed projects and uses that knowledge to improve recommendations:
+
+- **Pattern Capture**: Automatically extracts successful patterns from completed projects
+- **Tech Stack Suggestions**: Recommends technologies based on past project success rates
+- **Pitfall Detection**: Warns about common issues for specific project types
+- **Similarity Matching**: Finds relevant lessons from similar past projects
+
+### How It Works
+
+1. When a project completes, call `playbook_complete_project` with a rating
+2. The system extracts patterns: what worked, what didn't, tech choices, etc.
+3. Future projects get personalized recommendations based on learned patterns
+4. Categories tracked: tech_stack, architecture, workflow, tooling, testing, deployment, pitfall
+
 ## Future Plans
 
 - [ ] Supabase integration for persistent state
 - [ ] RAG with pgvector for semantic search
 - [ ] Multi-user support with RLS
 - [x] Agent Factory for creating specialized agents ✓
-- [ ] Meta-Learning from completed projects
+- [x] Meta-Learning from completed projects ✓
 
 ## License
 
