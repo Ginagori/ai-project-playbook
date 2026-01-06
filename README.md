@@ -157,6 +157,14 @@ ai-project-playbook/
 | `playbook_learning_stats` | View meta-learning database statistics |
 | `playbook_add_lesson` | Manually add a lesson learned |
 
+### Team Tools (Supabase)
+
+| Tool | Description |
+|------|-------------|
+| `playbook_team_status` | Check Supabase connection and team info |
+| `playbook_share_lesson` | Share a lesson with the team |
+| `playbook_team_lessons` | View team's shared lessons |
+
 ## Supported Project Types
 
 - **SaaS Applications**: Multi-tenant web apps
@@ -210,11 +218,31 @@ The agent learns from completed projects and uses that knowledge to improve reco
 3. Future projects get personalized recommendations based on learned patterns
 4. Categories tracked: tech_stack, architecture, workflow, tooling, testing, deployment, pitfall
 
+## Team Collaboration (Supabase)
+
+The agent supports team collaboration via Supabase:
+
+- **Shared Lessons**: Lessons learned are shared across all team members
+- **Team Projects**: Projects are visible to the whole team
+- **Row Level Security**: Each team's data is isolated
+
+### Setup for Team Members
+
+1. Get the Supabase credentials from your team lead
+2. Configure environment variables:
+   ```env
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   PLAYBOOK_TEAM_ID=your-team-uuid
+   PLAYBOOK_USER=your_name
+   ```
+3. See [docs/ONBOARDING.md](docs/ONBOARDING.md) for full setup instructions
+
 ## Future Plans
 
-- [ ] Supabase integration for persistent state
+- [x] Supabase integration for persistent state ✓
 - [ ] RAG with pgvector for semantic search
-- [ ] Multi-user support with RLS
+- [x] Multi-user support with RLS ✓
 - [x] Agent Factory for creating specialized agents ✓
 - [x] Meta-Learning from completed projects ✓
 

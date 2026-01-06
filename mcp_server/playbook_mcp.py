@@ -4,12 +4,15 @@ AI Project Playbook MCP Server
 Exposes the AI Project Playbook Agent as an MCP server for Claude Code integration.
 Uses LangGraph orchestrator for phase management.
 Includes Agent Factory for multi-agent patterns and specialized agents.
+Supports Supabase for shared team knowledge base.
 """
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 from agent.orchestrator import (
@@ -36,6 +39,10 @@ from agent.meta_learning import (
     get_lessons_db,
     PatternCategory,
 )
+from agent.supabase_client import configure_supabase
+
+# Load environment variables
+load_dotenv()
 
 # Initialize MCP server
 mcp = FastMCP("playbook")
@@ -43,7 +50,19 @@ mcp = FastMCP("playbook")
 # Get playbook directory
 PLAYBOOK_DIR = Path(__file__).parent.parent / "playbook"
 
-# In-memory session storage (will be replaced with Supabase)
+# Configure Supabase if environment variables are set
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_ANON_KEY")
+team_id = os.getenv("PLAYBOOK_TEAM_ID")
+
+if supabase_url and supabase_key and team_id and team_id != "pending":
+    db = configure_supabase(supabase_url, supabase_key, team_id)
+    SUPABASE_ENABLED = db.is_configured
+else:
+    SUPABASE_ENABLED = False
+    db = None
+
+# In-memory session storage (fallback when Supabase not configured)
 # Stores OrchestratorState objects
 sessions: dict[str, OrchestratorState] = {}
 
@@ -936,6 +955,194 @@ async def add_lesson(
 
 _This lesson will be used in future recommendations._
 """
+
+
+# ============================================
+# SUPABASE TOOLS (Team Shared Knowledge)
+# ============================================
+
+@mcp.tool(name="playbook_team_status")
+async def team_status() -> str:
+    """
+    Check Supabase connection and team configuration status.
+
+    Returns:
+        Connection status and team information
+    """
+    output = "## Team Configuration Status\n\n"
+
+    if not SUPABASE_ENABLED:
+        output += """### ❌ Supabase Not Configured
+
+The agent is running in **local mode**. Lessons and projects are stored locally
+and NOT shared with your team.
+
+**To enable team sharing:**
+
+1. Create a Supabase project at https://supabase.com
+2. Run the schema SQL from `supabase/schema.sql`
+3. Set environment variables:
+   ```
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   PLAYBOOK_TEAM_ID=your-team-uuid
+   ```
+4. Restart the MCP server
+
+---
+
+**Current Mode**: Local (JSON file storage)
+"""
+    else:
+        # Try to get team info
+        team_info = await db.get_team()
+        lessons_stats = await db.get_lessons_stats()
+
+        output += f"""### ✅ Supabase Connected
+
+**Team**: {team_info['name'] if team_info else 'Unknown'}
+**Team ID**: {team_id[:8]}...
+
+### Shared Knowledge Base
+- **Total Lessons**: {lessons_stats['total']}
+- **By Category**:
+"""
+        for cat, count in lessons_stats.get('by_category', {}).items():
+            output += f"  - {cat}: {count}\n"
+
+        output += """
+---
+
+All lessons and project outcomes are shared with your team.
+"""
+
+    return output
+
+
+@mcp.tool(name="playbook_share_lesson")
+async def share_lesson(
+    title: str,
+    description: str,
+    recommendation: str,
+    category: str = "workflow",
+    project_type: str = "",
+    tech_stack: str = "",
+    tags: str = "",
+) -> str:
+    """
+    Share a lesson with the team (saves to Supabase).
+
+    Args:
+        title: Short title for the lesson
+        description: What happened or was observed
+        recommendation: What to do differently
+        category: Category (tech_stack, architecture, workflow, tooling, testing, deployment, pitfall)
+        project_type: Where this applies (saas, api, agent, multi_agent)
+        tech_stack: Comma-separated technologies this applies to
+        tags: Comma-separated tags
+
+    Returns:
+        Confirmation of shared lesson
+    """
+    if not SUPABASE_ENABLED:
+        return """## ❌ Team Sharing Not Available
+
+Supabase is not configured. The lesson will be saved locally only.
+
+Use `playbook_team_status` to see how to configure team sharing.
+"""
+
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    tech_list = [t.strip() for t in tech_stack.split(",") if t.strip()] if tech_stack else []
+    project_types = [project_type] if project_type else []
+
+    result = await db.add_lesson(
+        category=category,
+        title=title,
+        description=description,
+        recommendation=recommendation,
+        project_types=project_types,
+        tech_stacks=tech_list,
+        tags=tag_list,
+        contributed_by=os.getenv("PLAYBOOK_USER", "unknown"),
+    )
+
+    if result:
+        return f"""## ✅ Lesson Shared with Team
+
+**{title}**
+
+- **Category**: {category}
+- **Description**: {description}
+- **Recommendation**: {recommendation}
+- **Technologies**: {', '.join(tech_list) if tech_list else 'Any'}
+- **Tags**: {', '.join(tag_list) if tag_list else 'None'}
+- **Contributed by**: {os.getenv("PLAYBOOK_USER", "unknown")}
+
+_This lesson is now available to all team members._
+"""
+    else:
+        return "## ❌ Failed to share lesson. Check Supabase connection."
+
+
+@mcp.tool(name="playbook_team_lessons")
+async def team_lessons(
+    category: str = "",
+    project_type: str = "",
+    limit: int = 10,
+) -> str:
+    """
+    Get lessons shared by the team.
+
+    Args:
+        category: Filter by category (optional)
+        project_type: Filter by project type (optional)
+        limit: Maximum lessons to return (default 10)
+
+    Returns:
+        List of team lessons
+    """
+    if not SUPABASE_ENABLED:
+        return """## ❌ Team Sharing Not Available
+
+Supabase is not configured. Use `playbook_team_status` to see how to configure.
+"""
+
+    lessons = await db.get_lessons(
+        category=category if category else None,
+        project_type=project_type if project_type else None,
+        limit=limit,
+    )
+
+    if not lessons:
+        return f"""## No Lessons Found
+
+No lessons match your criteria. Be the first to share one with `playbook_share_lesson`!
+"""
+
+    output = f"""## Team Lessons ({len(lessons)} found)
+
+"""
+    for lesson in lessons:
+        votes = lesson.get('upvotes', 0) - lesson.get('downvotes', 0)
+        vote_str = f"+{votes}" if votes > 0 else str(votes)
+
+        output += f"""### {lesson['title']}
+
+- **Category**: {lesson['category']}
+- **Confidence**: {lesson['confidence']:.0%}
+- **Votes**: {vote_str}
+- **Used**: {lesson['frequency']}x
+
+**Description**: {lesson['description']}
+
+**Recommendation**: {lesson['recommendation']}
+
+---
+
+"""
+
+    return output
 
 
 def main():
