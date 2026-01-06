@@ -1,0 +1,23 @@
+# AI Project Playbook MCP Server
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY agent/ ./agent/
+COPY mcp_server/ ./mcp_server/
+COPY playbook/ ./playbook/
+COPY scripts/ ./scripts/
+
+# Create data directory for lessons database
+RUN mkdir -p /app/data
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run MCP server
+CMD ["python", "-m", "mcp_server.playbook_mcp"]
