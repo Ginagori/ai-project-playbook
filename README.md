@@ -120,7 +120,7 @@ ai-project-playbook/
 
 ## MCP Tools
 
-### Project Management Tools
+### Project Management Tools (10)
 
 | Tool | Description |
 |------|-------------|
@@ -129,9 +129,11 @@ ai-project-playbook/
 | `playbook_answer` | Answer agent's question |
 | `playbook_search` | Search the playbook |
 | `playbook_get_status` | Get project status |
-| `playbook_list_sessions` | List all active sessions |
+| `playbook_list_sessions` | List all active sessions (local + team) |
 | `playbook_get_claude_md` | Get generated CLAUDE.md |
 | `playbook_get_prd` | Get generated PRD |
+| `playbook_link_repo` | Link a GitHub repository to a project |
+| `playbook_get_repo` | Get the repository URL for a project |
 
 ### Agent Factory Tools
 
@@ -222,9 +224,16 @@ The agent learns from completed projects and uses that knowledge to improve reco
 
 The agent supports team collaboration via Supabase:
 
+- **Shared Projects**: Projects sync automatically to the cloud
 - **Shared Lessons**: Lessons learned are shared across all team members
-- **Team Projects**: Projects are visible to the whole team
+- **Repository Links**: Link GitHub repos so team knows where code lives
 - **Row Level Security**: Each team's data is isolated
+
+### Key Features
+
+- **Continue any project**: Use `playbook_continue` to pick up where a teammate left off
+- **See team projects**: `playbook_list_sessions` shows both local and team sessions
+- **Track repositories**: `playbook_link_repo` associates GitHub URLs with projects
 
 ### Setup for Team Members
 
@@ -241,6 +250,8 @@ The agent supports team collaboration via Supabase:
 ## Future Plans
 
 - [x] Supabase integration for persistent state ✓
+- [x] Project sync across team members ✓
+- [x] Repository linking for projects ✓
 - [ ] RAG with pgvector for semantic search
 - [x] Multi-user support with RLS ✓
 - [x] Agent Factory for creating specialized agents ✓

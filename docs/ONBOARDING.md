@@ -152,9 +152,9 @@ El agente iniciará el flujo de Discovery con preguntas sobre:
 - Funcionalidades principales
 - Escala esperada
 
-### Comandos disponibles (25 tools)
+### Comandos disponibles (27 tools)
 
-#### Project Management
+#### Project Management (10 tools)
 | Tool | Descripción |
 |------|-------------|
 | `playbook_start_project` | Iniciar proyecto nuevo |
@@ -162,11 +162,13 @@ El agente iniciará el flujo de Discovery con preguntas sobre:
 | `playbook_continue` | Continuar sesión existente |
 | `playbook_search` | Buscar en el playbook |
 | `playbook_get_status` | Ver estado del proyecto |
-| `playbook_list_sessions` | Listar sesiones activas |
+| `playbook_list_sessions` | Listar sesiones activas (locales + equipo) |
 | `playbook_get_claude_md` | Obtener CLAUDE.md generado |
 | `playbook_get_prd` | Obtener PRD generado |
+| `playbook_link_repo` | Vincular repositorio GitHub al proyecto |
+| `playbook_get_repo` | Obtener URL del repositorio |
 
-#### Agent Factory
+#### Agent Factory (8 tools)
 | Tool | Descripción |
 |------|-------------|
 | `playbook_run_task` | Ejecutar tarea con el mejor agente |
@@ -178,7 +180,7 @@ El agente iniciará el flujo de Discovery con preguntas sobre:
 | `playbook_generate_code` | Generar código |
 | `playbook_generate_tests` | Generar tests |
 
-#### Meta-Learning (Compartido con el equipo)
+#### Meta-Learning (6 tools)
 | Tool | Descripción |
 |------|-------------|
 | `playbook_complete_project` | Completar proyecto y guardar lecciones |
@@ -188,7 +190,7 @@ El agente iniciará el flujo de Discovery con preguntas sobre:
 | `playbook_learning_stats` | Estadísticas de aprendizaje del equipo |
 | `playbook_add_lesson` | Agregar lección manualmente |
 
-#### Team Tools (Nuevos)
+#### Team Collaboration (3 tools)
 | Tool | Descripción |
 |------|-------------|
 | `playbook_team_status` | Ver estado de conexión al equipo |
@@ -292,7 +294,45 @@ Usa playbook_add_lesson con:
 
 1. Verifica que ambos usan el mismo `PLAYBOOK_TEAM_ID`
 2. Verifica conexión con `playbook_team_status`
-3. Las sesiones locales (JSON) no se sincronizan - solo lecciones en Supabase
+3. Los proyectos se sincronizan automáticamente con Supabase
+4. Usa `playbook_list_sessions` para ver proyectos de todo el equipo
+
+---
+
+## Colaboración en Equipo
+
+### Proyectos Compartidos
+
+Los proyectos se sincronizan automáticamente con Supabase:
+- Cuando inicias un proyecto, se guarda en la nube
+- Tus compañeros pueden ver y continuar tus proyectos
+- Cada proyecto muestra quién lo creó (`created_by`)
+
+### Vincular Repositorios
+
+Para que el equipo sepa dónde está el código de cada proyecto:
+
+```
+playbook_link_repo session_id="abc123" repo_url="https://github.com/Nivanta/mi-proyecto"
+```
+
+Esto hace que `playbook_list_sessions` muestre un link clickeable al repo:
+
+```
+## Active Sessions
+### Team Sessions (shared via Supabase)
+- **abc123**: Mi Proyecto (planning, by natalia) | [repo](https://github.com/...)
+```
+
+### Continuar el proyecto de un compañero
+
+```
+# Ver proyectos del equipo
+playbook_list_sessions
+
+# Continuar cualquier proyecto (tuyo o de un compañero)
+playbook_continue session_id="abc123"
+```
 
 ---
 
