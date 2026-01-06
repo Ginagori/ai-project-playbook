@@ -39,7 +39,7 @@ from agent.meta_learning import (
     get_lessons_db,
     PatternCategory,
 )
-from agent.supabase_client import configure_supabase
+from agent.supabase_client import configure_supabase, get_supabase_client
 
 # Load environment variables
 load_dotenv()
@@ -67,6 +67,82 @@ else:
 sessions: dict[str, OrchestratorState] = {}
 
 
+async def _reconstruct_state_from_supabase(data: dict) -> OrchestratorState | None:
+    """Reconstruct OrchestratorState from Supabase data."""
+    from agent.models.project import (
+        ProjectState,
+        Phase,
+        AutonomyMode,
+        ProjectType,
+        ScalePhase,
+        TechStack,
+        Feature,
+    )
+
+    try:
+        phase_data = data.get("phase_data", {})
+
+        # Reconstruct tech_stack
+        tech_stack_data = data.get("tech_stack") or {}
+        tech_stack = TechStack(
+            frontend=tech_stack_data.get("frontend"),
+            backend=tech_stack_data.get("backend"),
+            database=tech_stack_data.get("database"),
+            auth=tech_stack_data.get("auth"),
+            deployment=tech_stack_data.get("deployment"),
+            extras=tech_stack_data.get("extras", {}),
+        )
+
+        # Reconstruct features
+        features = []
+        for f_data in phase_data.get("features", []):
+            features.append(Feature(
+                name=f_data.get("name", ""),
+                description=f_data.get("description", ""),
+                status=f_data.get("status", "pending"),
+                plan=f_data.get("plan"),
+                files=f_data.get("files", []),
+                tests=f_data.get("tests", []),
+            ))
+
+        # Reconstruct project type
+        project_type = None
+        if data.get("project_type"):
+            try:
+                project_type = ProjectType(data["project_type"])
+            except ValueError:
+                pass
+
+        # Reconstruct project state
+        project = ProjectState(
+            id=data["session_id"],
+            objective=data["objective"],
+            current_phase=Phase(data.get("current_phase", "discovery")),
+            mode=AutonomyMode(phase_data.get("mode", "supervised")),
+            project_type=project_type,
+            scale=ScalePhase(phase_data.get("scale", "mvp")),
+            tech_stack=tech_stack,
+            features=features,
+            current_feature_index=phase_data.get("current_feature_index", 0),
+            discovery_answers=phase_data.get("discovery_answers", {}),
+            needs_user_input=phase_data.get("needs_user_input", True),
+            claude_md=data.get("claude_md"),
+            prd=data.get("prd"),
+            roadmap=data.get("roadmap", []),
+            implementation_plans=data.get("implementation_plans", {}),
+            deployment_configs=data.get("deployment_configs", {}),
+        )
+
+        # Reconstruct orchestrator state
+        return OrchestratorState(
+            project=project,
+            discovery_question_index=phase_data.get("discovery_question_index", 0),
+        )
+    except Exception as e:
+        print(f"Error reconstructing state: {e}")
+        return None
+
+
 @mcp.tool(name="playbook_start_project")
 async def start_project(objective: str, mode: str = "supervised") -> str:
     """
@@ -86,12 +162,17 @@ async def start_project(objective: str, mode: str = "supervised") -> str:
     # Run the orchestrator to get the first output
     result = run_orchestrator(state)
 
-    # Store the state
+    # Store the state locally
     sessions[session_id] = result
+
+    # Sync to Supabase if enabled (for team sharing)
+    if SUPABASE_ENABLED and db:
+        await db.save_orchestrator_state(result)
 
     return f"""
 **Session Started: `{session_id}`**
 **Mode: {mode}**
+**Shared with team: {SUPABASE_ENABLED}**
 
 {result.agent_output}
 
@@ -112,8 +193,19 @@ async def answer_question(session_id: str, answer: str) -> str:
     Returns:
         Next question or action from the agent
     """
+    # Try local first, then Supabase
     if session_id not in sessions:
-        return f"Error: Session '{session_id}' not found. Start a new project with playbook_start_project."
+        # Try to load from Supabase
+        if SUPABASE_ENABLED and db:
+            remote_data = await db.load_orchestrator_state(session_id)
+            if remote_data:
+                # Reconstruct state from Supabase data
+                state = await _reconstruct_state_from_supabase(remote_data)
+                if state:
+                    sessions[session_id] = state
+
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found. Use `playbook_list_sessions` to see available sessions."
 
     # Get current state
     state = sessions[session_id]
@@ -124,8 +216,12 @@ async def answer_question(session_id: str, answer: str) -> str:
 
     result = run_orchestrator(state)
 
-    # Store updated state
+    # Store updated state locally
     sessions[session_id] = result
+
+    # Sync to Supabase
+    if SUPABASE_ENABLED and db:
+        await db.save_orchestrator_state(result)
 
     output = result.agent_output or "Processing..."
 
@@ -146,8 +242,18 @@ async def continue_project(session_id: str) -> str:
     Returns:
         Current state and next action
     """
+    # Try local first, then Supabase
     if session_id not in sessions:
-        return f"Error: Session '{session_id}' not found."
+        # Try to load from Supabase
+        if SUPABASE_ENABLED and db:
+            remote_data = await db.load_orchestrator_state(session_id)
+            if remote_data:
+                state = await _reconstruct_state_from_supabase(remote_data)
+                if state:
+                    sessions[session_id] = state
+
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found. Use `playbook_list_sessions` to see available sessions."
 
     state = sessions[session_id]
     project = state.project
@@ -265,20 +371,42 @@ async def get_project_status(session_id: str) -> str:
 @mcp.tool(name="playbook_list_sessions")
 async def list_sessions() -> str:
     """
-    List all active project sessions.
+    List all active project sessions (local and team shared).
 
     Returns:
         List of session IDs and their objectives
     """
-    if not sessions:
+    output = "## Active Sessions\n\n"
+    team_projects = []
+
+    # Show local sessions
+    if sessions:
+        output += "### Local Sessions (this machine)\n"
+        for sid, state in sessions.items():
+            project = state.project
+            progress = f"{project.progress_percentage:.0f}%" if project.features else "0%"
+            output += f"- **{sid}**: {project.objective} ({project.current_phase.value}, {progress})\n"
+        output += "\n"
+
+    # Show team sessions from Supabase
+    if SUPABASE_ENABLED and db:
+        team_projects = await db.list_team_projects(limit=20, include_completed=False)
+        if team_projects:
+            output += "### Team Sessions (shared via Supabase)\n"
+            for proj in team_projects:
+                sid = proj["session_id"]
+                obj = proj["objective"]
+                phase = proj.get("current_phase", "discovery")
+                created_by = proj.get("created_by", "unknown")
+
+                # Mark if already loaded locally
+                local_mark = " *(loaded)*" if sid in sessions else ""
+                output += f"- **{sid}**: {obj} ({phase}, by {created_by}){local_mark}\n"
+
+    if not sessions and not team_projects:
         return "No active sessions. Start a new project with `playbook_start_project`."
 
-    output = "## Active Sessions\n\n"
-    for sid, state in sessions.items():
-        project = state.project
-        progress = f"{project.progress_percentage:.0f}%" if project.features else "0%"
-        output += f"- **{sid}**: {project.objective} ({project.current_phase.value}, {progress})\n"
-
+    output += "\n---\n*Use `playbook_continue` with a session_id to continue any project.*"
     return output
 
 

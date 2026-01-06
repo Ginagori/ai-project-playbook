@@ -164,6 +164,94 @@ class SupabaseClient:
             created_by=row.get("created_by"),
         )
 
+    async def save_orchestrator_state(self, state: Any) -> bool:
+        """Save full orchestrator state to Supabase.
+
+        Args:
+            state: OrchestratorState object from the orchestrator
+        """
+        if not self.client or not self.team_id:
+            return False
+
+        project = state.project
+        user = os.getenv("PLAYBOOK_USER", "unknown")
+
+        # Serialize tech_stack
+        tech_stack_data = None
+        if project.tech_stack:
+            tech_stack_data = {
+                "frontend": project.tech_stack.frontend,
+                "backend": project.tech_stack.backend,
+                "database": project.tech_stack.database,
+                "auth": project.tech_stack.auth,
+                "deployment": project.tech_stack.deployment,
+                "extras": project.tech_stack.extras,
+            }
+
+        # Serialize features
+        features_data = []
+        for f in project.features:
+            features_data.append({
+                "name": f.name,
+                "description": f.description,
+                "status": f.status,
+                "plan": f.plan,
+                "files": f.files,
+                "tests": f.tests,
+            })
+
+        data = {
+            "team_id": self.team_id,
+            "session_id": project.id,
+            "objective": project.objective,
+            "project_type": project.project_type.value if project.project_type else None,
+            "tech_stack": tech_stack_data,
+            "current_phase": project.current_phase.value,
+            "phase_data": {
+                "user_answers": project.user_answers,
+                "mode": project.mode.value,
+                "scale": project.scale.value,
+                "needs_user_input": project.needs_user_input,
+                "current_feature_index": project.current_feature_index,
+                "discovery_question_index": state.discovery_question_index,
+                "features": features_data,
+                "pending_question": project.pending_question,
+                "validation_results": project.validation_results,
+            },
+            "claude_md": project.claude_md,
+            "prd": project.prd,
+            "deployment_configs": project.deployment_configs,
+            "is_shared": True,  # Team projects are always shared
+            "created_by": user,
+        }
+
+        try:
+            result = self.client.table("projects").upsert(
+                data,
+                on_conflict="session_id"
+            ).execute()
+            return bool(result.data)
+        except Exception as e:
+            print(f"Error saving to Supabase: {e}")
+            return False
+
+    async def load_orchestrator_state(self, session_id: str) -> Optional[Dict]:
+        """Load orchestrator state from Supabase.
+
+        Returns raw dict that can be used to reconstruct OrchestratorState.
+        """
+        if not self.client:
+            return None
+
+        try:
+            result = self.client.table("projects").select("*").eq("session_id", session_id).execute()
+            if result.data:
+                return result.data[0]
+        except Exception as e:
+            print(f"Error loading from Supabase: {e}")
+
+        return None
+
     async def list_team_projects(
         self,
         limit: int = 20,
