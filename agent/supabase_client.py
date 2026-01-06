@@ -280,6 +280,32 @@ class SupabaseClient:
 
         return bool(result.data)
 
+    async def link_repo(self, session_id: str, repo_url: str) -> bool:
+        """Link a GitHub repository URL to a project.
+
+        Args:
+            session_id: The project session ID
+            repo_url: The GitHub repository URL (e.g., https://github.com/user/repo)
+        """
+        if not self.client:
+            return False
+
+        result = self.client.table("projects").update({
+            "repo_url": repo_url
+        }).eq("session_id", session_id).execute()
+
+        return bool(result.data)
+
+    async def get_repo_url(self, session_id: str) -> Optional[str]:
+        """Get the repository URL for a project."""
+        if not self.client:
+            return None
+
+        result = self.client.table("projects").select("repo_url").eq("session_id", session_id).execute()
+        if result.data and result.data[0].get("repo_url"):
+            return result.data[0]["repo_url"]
+        return None
+
     # ==========================================
     # LESSONS LEARNED OPERATIONS
     # ==========================================

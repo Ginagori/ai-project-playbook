@@ -398,10 +398,12 @@ async def list_sessions() -> str:
                 obj = proj["objective"]
                 phase = proj.get("current_phase", "discovery")
                 created_by = proj.get("created_by", "unknown")
+                repo_url = proj.get("repo_url", "")
 
                 # Mark if already loaded locally
                 local_mark = " *(loaded)*" if sid in sessions else ""
-                output += f"- **{sid}**: {obj} ({phase}, by {created_by}){local_mark}\n"
+                repo_mark = f" | [repo]({repo_url})" if repo_url else ""
+                output += f"- **{sid}**: {obj} ({phase}, by {created_by}){repo_mark}{local_mark}\n"
 
     if not sessions and not team_projects:
         return "No active sessions. Start a new project with `playbook_start_project`."
@@ -1271,6 +1273,118 @@ No lessons match your criteria. Be the first to share one with `playbook_share_l
 """
 
     return output
+
+
+@mcp.tool(name="playbook_link_repo")
+async def link_repo(session_id: str, repo_url: str = "") -> str:
+    """
+    Link a GitHub repository URL to a project.
+
+    This allows team members to know where the code lives for any project.
+    If no repo_url is provided, it will try to detect the Git remote from
+    the current directory.
+
+    Args:
+        session_id: The project session ID
+        repo_url: GitHub repository URL (e.g., https://github.com/user/repo)
+                  If empty, will try to auto-detect from git remote
+
+    Returns:
+        Confirmation message with the linked repo
+    """
+    if not SUPABASE_ENABLED:
+        return """## ❌ Repository Linking Not Available
+
+Supabase is not configured. Repository URLs are stored in the team database.
+Use `playbook_team_status` to see how to configure.
+"""
+
+    # Validate session exists
+    if session_id not in sessions:
+        # Try to load from Supabase
+        data = await db.load_orchestrator_state(session_id)
+        if not data:
+            return f"## ❌ Session `{session_id}` not found."
+
+    # If no URL provided, try to get current repo URL
+    final_url = repo_url.strip()
+    if not final_url:
+        return """## ❌ No Repository URL Provided
+
+Please provide the repository URL. Example:
+```
+playbook_link_repo session_id="abc123" repo_url="https://github.com/user/repo"
+```
+
+Or run `git remote get-url origin` in your project directory to get the URL.
+"""
+
+    # Basic validation
+    if not (final_url.startswith("https://github.com/") or
+            final_url.startswith("git@github.com:") or
+            final_url.startswith("https://gitlab.com/") or
+            final_url.startswith("https://bitbucket.org/")):
+        return f"""## ⚠️ Invalid Repository URL
+
+The URL `{final_url}` doesn't look like a valid repository URL.
+
+Expected formats:
+- `https://github.com/username/repo`
+- `git@github.com:username/repo.git`
+- `https://gitlab.com/username/repo`
+"""
+
+    # Link the repo
+    success = await db.link_repo(session_id, final_url)
+
+    if success:
+        return f"""## ✅ Repository Linked
+
+**Session**: `{session_id}`
+**Repository**: {final_url}
+
+Team members can now see where the code lives when they list projects.
+"""
+    else:
+        return "## ❌ Failed to link repository. Check Supabase connection."
+
+
+@mcp.tool(name="playbook_get_repo")
+async def get_repo(session_id: str) -> str:
+    """
+    Get the repository URL for a project.
+
+    Args:
+        session_id: The project session ID
+
+    Returns:
+        Repository URL or message if not linked
+    """
+    if not SUPABASE_ENABLED:
+        return "## ❌ Supabase not configured."
+
+    repo_url = await db.get_repo_url(session_id)
+
+    if repo_url:
+        return f"""## Repository for `{session_id}`
+
+**URL**: {repo_url}
+
+Clone with:
+```bash
+git clone {repo_url}
+```
+"""
+    else:
+        return f"""## No Repository Linked
+
+Session `{session_id}` doesn't have a repository linked yet.
+
+Use `playbook_link_repo` to associate a repository:
+```
+playbook_link_repo session_id="{session_id}" repo_url="https://github.com/..."
+```
+"""
 
 
 def main():
