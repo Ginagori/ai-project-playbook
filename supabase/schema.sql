@@ -187,8 +187,10 @@ CREATE TRIGGER update_lessons_updated_at
 -- VIEWS for easy querying
 -- ============================================
 
--- Team lessons with stats
-CREATE VIEW team_lessons_stats AS
+-- Team lessons with stats (SECURITY INVOKER to respect RLS)
+CREATE VIEW team_lessons_stats
+WITH (security_invoker = true)
+AS
 SELECT
     l.*,
     t.name as team_name,
@@ -197,8 +199,10 @@ SELECT
 FROM lessons_learned l
 JOIN teams t ON l.team_id = t.id;
 
--- Project summary
-CREATE VIEW project_summary AS
+-- Project summary (SECURITY INVOKER to respect RLS)
+CREATE VIEW project_summary
+WITH (security_invoker = true)
+AS
 SELECT
     p.*,
     t.name as team_name,
