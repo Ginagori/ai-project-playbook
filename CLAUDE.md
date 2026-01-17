@@ -336,6 +336,23 @@ cd ui-agent
 ./scripts/install-global.sh  # or .ps1 for Windows
 ```
 
+### Design Inspiration MCP
+
+UI Agent includes a **design-mcp** for searching design inspiration before generating components.
+
+**Available tools:**
+- `search_dribbble` - Search Dribbble for design shots
+- `search_behance` - Search Behance for projects
+- `search_awwwards` - Search award-winning websites
+- `get_ui_pattern` - Best practices for UI patterns (dashboard, login, pricing, form, table, modal, sidebar, card, notification, settings)
+- `get_design_recommendations` - Tailored suggestions for a use case
+
+**Recommended workflow:**
+1. Use `get_design_recommendations` with the project use case
+2. Search Dribbble/Behance for visual inspiration
+3. Get UI pattern best practices
+4. Generate components with UI Agent following the inspiration
+
 ---
 
 *Built by Nivanta AI Team*
