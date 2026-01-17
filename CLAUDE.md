@@ -184,6 +184,17 @@ All tables have RLS enabled. Data is isolated by `team_id`.
 
 ---
 
+## Lessons Learned System
+
+**IMPORTANT**: Always use `playbook_share_lesson` (NOT `playbook_add_lesson`) to save lessons.
+
+- `playbook_add_lesson` → saves locally only (session-scoped, NOT persistent)
+- `playbook_share_lesson` → saves to Supabase (shared with team, persistent)
+
+When capturing learnings from development sessions, ALWAYS use `playbook_share_lesson` so they are stored in Supabase and available to the entire team.
+
+---
+
 ## Common Patterns
 
 ### Adding a New MCP Tool
