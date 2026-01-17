@@ -275,4 +275,56 @@ refactor: Restructure code
 
 ---
 
+## UI Agent Integration
+
+The Playbook Agent integrates with **UI Agent** for frontend component generation.
+
+### How It Works
+
+When you create a project with Playbook Agent, it generates:
+- `CLAUDE.md` - Project rules and conventions
+- `docs/PRD.md` - Product requirements document
+- `.playbook/session.json` - Session state
+
+When you run `ui-agent chat` in that project, UI Agent **automatically detects** these files and:
+1. Reads the tech stack from CLAUDE.md
+2. Uses project rules for component generation
+3. Follows the PRD requirements
+4. Generates components that match the established architecture
+
+### Workflow
+
+```
+1. Start project with Playbook:
+   playbook_start_project "Build a veterinary clinic SaaS"
+
+2. Complete Discovery & Planning phases:
+   → Generates CLAUDE.md with tech stack
+   → Generates PRD.md with requirements
+
+3. When ready for frontend:
+   cd your-project
+   ui-agent chat
+   → UI Agent reads Playbook context automatically
+   → "ℹ Playbook context detected - using project rules"
+
+4. Generate components:
+   "Create a login form with email and social login"
+   → Component follows project's tech stack
+   → Uses established styling (Tailwind, etc.)
+```
+
+### UI Agent Repository
+
+**GitHub:** https://github.com/Ginagori/ui-agent
+
+Install globally:
+```bash
+git clone https://github.com/Ginagori/ui-agent.git
+cd ui-agent
+./scripts/install-global.sh  # or .ps1 for Windows
+```
+
+---
+
 *Built by Nivanta AI Team*
