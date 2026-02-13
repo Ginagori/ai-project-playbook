@@ -22,6 +22,9 @@ from agent.evals.rules import (
     has_code_examples,
     has_architecture_pattern,
     has_integration_points,
+    has_dependency_declarations,
+    has_specific_file_paths,
+    has_pseudocode,
 )
 
 
@@ -161,12 +164,39 @@ class ArtifactEvaluator:
 
         return self._build_result("plan", checks)
 
+    def evaluate_prp(self, content: str) -> EvalResult:
+        """
+        Evaluate a PRP (Project Requirements Plan).
+
+        Checks:
+        - Required sections (Goal, Success Criteria, Blueprint, Validation, etc.)
+        - Specific file paths (not generic placeholders)
+        - Pseudocode with classes/functions
+        - Dependency declarations
+        - Validation commands included
+        - Integration points mentioned
+        - No placeholder text
+        - Minimum length (1000 chars for a full PRP)
+        """
+        checks = [
+            has_required_sections(content, "prp"),
+            has_specific_file_paths(content),
+            has_pseudocode(content),
+            has_dependency_declarations(content),
+            has_validation_commands(content),
+            has_integration_points(content),
+            no_placeholder_text(content),
+            minimum_length(content, min_chars=1000, artifact_type="prp"),
+        ]
+
+        return self._build_result("prp", checks)
+
     def evaluate(self, artifact_type: str, content: str) -> EvalResult:
         """
         Evaluate any artifact by type.
 
         Args:
-            artifact_type: One of "claude_md", "prd", "plan"
+            artifact_type: One of "claude_md", "prd", "plan", "prp"
             content: The artifact content to evaluate
 
         Returns:
@@ -176,6 +206,7 @@ class ArtifactEvaluator:
             "claude_md": self.evaluate_claude_md,
             "prd": self.evaluate_prd,
             "plan": self.evaluate_plan,
+            "prp": self.evaluate_prp,
         }
 
         evaluator = evaluators.get(artifact_type)

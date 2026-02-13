@@ -651,6 +651,15 @@ def roadmap_node(state: OrchestratorState) -> OrchestratorState:
         ]
 
     project.features = features
+
+    # Enrich features with PRD context (requirements, criteria, dependencies)
+    if project.prd:
+        from agent.prp_builder import enrich_features_from_prd
+        enrich_features_from_prd(
+            project.features, project.prd,
+            project_type=project.project_type.value if project.project_type else None,
+        )
+
     project.current_phase = Phase.IMPLEMENTATION
     project.needs_user_input = True
 
@@ -760,8 +769,11 @@ Reply with "plan" to see the implementation plan, or "next" when done.
     # Start or continue current feature
     feature.status = "in_progress"
 
-    # Generate feature-specific implementation plan
-    plan = generate_feature_plan(feature.name, feature.description, ts, project.project_type)
+    # Generate feature-specific implementation plan (context-aware when PRD/CLAUDE.md available)
+    plan = generate_feature_plan(
+        feature.name, feature.description, ts, project.project_type,
+        prd=project.prd, claude_md=project.claude_md, features=project.features,
+    )
 
     # Evaluate the generated plan
     from agent.evals import ArtifactEvaluator
@@ -878,9 +890,50 @@ npm run build
 ```"""
 
 
-def generate_feature_plan(name: str, description: str, tech_stack, project_type) -> str:
-    """Generate a detailed implementation plan for a feature in PRP-inspired format."""
+def generate_feature_plan(
+    name: str,
+    description: str,
+    tech_stack,
+    project_type,
+    prd: str | None = None,
+    claude_md: str | None = None,
+    features: list | None = None,
+) -> str:
+    """Generate a detailed implementation plan for a feature.
 
+    When prd and claude_md are available, uses PRPBuilder for context-aware plans.
+    Otherwise falls back to hardcoded templates for backwards compatibility.
+    """
+    # Use PRPBuilder when full context is available
+    if prd and claude_md:
+        from agent.prp_builder import PRPBuilder
+        from agent.models.project import ProjectState, Feature as FeatureModel
+
+        # Build a minimal ProjectState for PRPBuilder
+        project = ProjectState(
+            id="plan-gen",
+            objective="",
+            tech_stack=tech_stack,
+            project_type=project_type,
+            prd=prd,
+            claude_md=claude_md,
+            features=features or [],
+        )
+        builder = PRPBuilder(project)
+
+        # Find the matching feature or create a temporary one
+        target_feature = None
+        for f in (features or []):
+            if f.name == name:
+                target_feature = f
+                break
+
+        if not target_feature:
+            target_feature = FeatureModel(name=name, description=description)
+
+        return builder.build_feature_prp(target_feature)
+
+    # Fallback: hardcoded templates when no PRD/CLAUDE.md context
     validation = generate_validation_loop(tech_stack)
 
     # Feature-specific plan templates

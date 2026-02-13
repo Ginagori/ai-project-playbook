@@ -44,10 +44,15 @@ class Feature(BaseModel):
     """A feature to be implemented."""
     name: str
     description: str
-    status: str = "pending"  # pending, in_progress, completed
+    status: str = "pending"  # pending, in_progress, completed, blocked
     plan: str | None = None
     files: list[str] = Field(default_factory=list)
     tests: list[str] = Field(default_factory=list)
+    # PRP support fields
+    depends_on: list[str] = Field(default_factory=list)
+    priority: str = "p0"  # p0 (core), p1 (nice-to-have), p2 (future)
+    prd_requirements: list[str] = Field(default_factory=list)
+    success_criteria: list[str] = Field(default_factory=list)
 
 
 class TechStack(BaseModel):

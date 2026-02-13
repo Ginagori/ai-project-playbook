@@ -446,8 +446,12 @@ async def get_prp(session_id: str, feature_name: str = "") -> str:
     """
     Get a feature plan in PRP (Project Requirements Plan) format.
 
-    If feature_name is provided, returns the plan for that specific feature.
-    Otherwise returns the PRD with PRP annotations.
+    Generates context-aware PRPs using the project's PRD and CLAUDE.md.
+    PRPs include specific file paths, pseudocode, validation commands,
+    and dependency information — designed for autonomous execution.
+
+    If feature_name is provided, returns the PRP for that specific feature.
+    Otherwise returns a roadmap overview with dependency graph.
 
     Args:
         session_id: The session ID
@@ -462,6 +466,9 @@ async def get_prp(session_id: str, feature_name: str = "") -> str:
     state = sessions[session_id]
     project = state.project
 
+    from agent.prp_builder import PRPBuilder
+    builder = PRPBuilder(project)
+
     if feature_name:
         # Find the specific feature
         feature = None
@@ -474,44 +481,30 @@ async def get_prp(session_id: str, feature_name: str = "") -> str:
             available = ", ".join(f.name for f in project.features)
             return f"Feature '{feature_name}' not found. Available: {available}"
 
-        # Generate PRP-style plan for the feature
-        from agent.orchestrator import generate_feature_plan, generate_validation_loop
-        plan = generate_feature_plan(
-            feature.name, feature.description,
-            project.tech_stack, project.project_type,
-        )
-        validation = generate_validation_loop(project.tech_stack)
+        # Generate context-aware PRP
+        prp = builder.build_feature_prp(feature)
 
         # Get quality score if available
         plan_score = project.validation_results.get(f"plan_{feature.name}_score", "N/A")
 
-        return f"""## PRP: {feature.name}
-
-### Goal
-{feature.description}
-
-### Context
+        return f"""## Context
 - **Project**: {project.objective}
 - **Type**: {project.project_type.value if project.project_type else "N/A"}
 - **Tech Stack**: {project.tech_stack.frontend or "N/A"} + {project.tech_stack.backend or "N/A"} + {project.tech_stack.database or "N/A"}
 - **Quality Score**: {plan_score}
 
-### Implementation Blueprint
-{plan}
-
-### Validation Loop
-{validation}
-
-### Anti-Patterns
-- Do NOT leave TODOs or placeholder code
-- Do NOT skip tests for "simple" features
-- Do NOT hardcode configuration values
-- Do NOT ignore error handling at API boundaries
+{prp}
 """
     else:
-        # Return PRD with PRP annotations
-        if not project.prd:
-            return "PRD has not been generated yet. Complete the Planning phase first."
+        # Return roadmap overview with dependency graph
+        if not project.features:
+            return "No features defined yet. Complete the Roadmap phase first."
+
+        dep_graph = builder._build_dependency_graph()
+        features_list = "\n".join(
+            f"- **{f.name}** [{f.priority.upper()}]: {f.description}"
+            for f in project.features
+        )
 
         return f"""## PRP Overview for Session {session_id}
 
@@ -520,15 +513,18 @@ async def get_prp(session_id: str, feature_name: str = "") -> str:
 - **Type**: {project.project_type.value if project.project_type else "N/A"}
 - **Features**: {len(project.features)} defined
 
-### PRD Content
-```markdown
-{project.prd}
-```
+### Dependency Graph
+{dep_graph}
 
-### Feature Plans Available
-Use `playbook_get_prp session_id="{session_id}" feature_name="<name>"` for detailed PRP:
+### Features
+{features_list}
 
-{chr(10).join(f'- **{f.name}**: {f.description}' for f in project.features)}
+### Get Detailed PRP
+Use `playbook_get_prp session_id="{session_id}" feature_name="<name>"` for each feature.
+
+### Get Full Execution Package
+Use `playbook_execution_package session_id="{session_id}"` to generate a complete
+handoff document for autonomous implementation.
 """
 
 
@@ -559,6 +555,54 @@ async def get_prd(session_id: str) -> str:
 
 *Copy this content to your project's docs/PRD.md file.*
 """
+
+
+# =============================================================================
+# Execution Package
+# =============================================================================
+
+
+@mcp.tool(name="playbook_execution_package")
+async def get_execution_package(session_id: str) -> str:
+    """
+    Generate a complete execution package for autonomous implementation.
+
+    Combines CLAUDE.md + PRD + all feature PRPs into a single document
+    that Claude Code can follow to implement the entire project autonomously.
+
+    The document includes:
+    - Project rules and conventions (from CLAUDE.md)
+    - Full requirements (from PRD)
+    - Ordered feature PRPs with dependencies resolved
+    - Checkpoint instructions for human review after each feature
+    - Validation commands for each feature and final validation
+
+    Use this after completing Discovery, Planning, and Roadmap phases.
+
+    Args:
+        session_id: The session ID
+
+    Returns:
+        Complete execution package in markdown format
+    """
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found."
+
+    state = sessions[session_id]
+    project = state.project
+
+    if not project.claude_md:
+        return "## Error\n\nCLAUDE.md has not been generated yet. Complete the Planning phase first."
+
+    if not project.prd:
+        return "## Error\n\nPRD has not been generated yet. Complete the Planning phase first."
+
+    if not project.features:
+        return "## Error\n\nNo features defined. Complete the Roadmap phase first."
+
+    from agent.prp_builder import PRPBuilder
+    builder = PRPBuilder(project)
+    return builder.build_execution_package()
 
 
 # =============================================================================

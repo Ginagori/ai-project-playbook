@@ -47,6 +47,16 @@ def has_required_sections(content: str, artifact_type: str = "claude_md") -> Che
             ("Tasks", "critical"),
             ("Validation", "warning"),
         ],
+        "prp": [
+            ("Goal", "critical"),
+            ("Success Criteria", "critical"),
+            ("Implementation Blueprint", "critical"),
+            ("Pseudocode", "critical"),
+            ("Validation Loop", "critical"),
+            ("Integration Points", "warning"),
+            ("Anti-Patterns", "warning"),
+            ("Must-Read Files", "info"),
+        ],
     }
 
     required = section_map.get(artifact_type, section_map["claude_md"])
@@ -283,6 +293,7 @@ def minimum_length(content: str, min_chars: int = 500, artifact_type: str = "cla
         "claude_md": 800,
         "prd": 600,
         "plan": 300,
+        "prp": 1000,
     }
 
     min_required = length_map.get(artifact_type, min_chars)
@@ -479,6 +490,95 @@ def has_integration_points(content: str) -> CheckResult:
         name="has_integration_points",
         passed=passed,
         severity="info",
+        message=message,
+        score=score,
+    )
+
+
+# =============================================================================
+# PRP-Specific Rules
+# =============================================================================
+
+def has_dependency_declarations(content: str) -> CheckResult:
+    """Check that PRP tasks declare their dependencies."""
+    dep_patterns = [
+        r"depends?\s+on",
+        r"required?\s+by",
+        r"after\s+(?:completing|implementing)",
+        r"prerequisite",
+        r"blocked\s+by",
+        r"\bdependenc(?:y|ies)\b",
+    ]
+
+    content_lower = content.lower()
+    found = [p for p in dep_patterns if re.search(p, content_lower)]
+
+    passed = len(found) >= 1
+    score = min(len(found) / 2, 1.0)
+
+    message = (
+        f"Found {len(found)} dependency declarations."
+        if passed
+        else "No dependency declarations. PRP should specify what must be built first."
+    )
+
+    return CheckResult(
+        name="has_dependency_declarations",
+        passed=passed,
+        severity="warning",
+        message=message,
+        score=score,
+    )
+
+
+def has_specific_file_paths(content: str) -> CheckResult:
+    """Check that file paths are specific (not generic placeholders)."""
+    # Match paths like src/auth/router.py, src/models/user.ts
+    specific_paths = re.findall(r"src/[a-zA-Z_]+/[a-zA-Z_]+\.[a-zA-Z]{2,4}", content)
+    # Match test paths
+    test_paths = re.findall(r"tests?/[a-zA-Z_]+/[a-zA-Z_]+\.[a-zA-Z]{2,4}", content)
+    # Match migration paths
+    migration_paths = re.findall(r"migrations?/[a-zA-Z_0-9]+\.[a-zA-Z]{2,4}", content)
+
+    total = len(specific_paths) + len(test_paths) + len(migration_paths)
+    passed = total >= 3
+    score = min(total / 5, 1.0)
+
+    message = (
+        f"Found {total} specific file paths ({len(specific_paths)} src, {len(test_paths)} test, {len(migration_paths)} migration)."
+        if passed
+        else f"Only {total} specific file path(s). PRP should reference exact files to create/modify."
+    )
+
+    return CheckResult(
+        name="has_specific_file_paths",
+        passed=passed,
+        severity="warning" if not passed else "info",
+        message=message,
+        score=score,
+    )
+
+
+def has_pseudocode(content: str) -> CheckResult:
+    """Check that PRP includes pseudocode or code examples."""
+    code_blocks = re.findall(r"```(?:python|typescript|javascript|sql|bash)", content.lower())
+    has_class = bool(re.search(r"class\s+\w+", content))
+    has_function = bool(re.search(r"(?:def|async def|function|const)\s+\w+", content))
+
+    indicators = len(code_blocks) + (1 if has_class else 0) + (1 if has_function else 0)
+    passed = indicators >= 2
+    score = min(indicators / 3, 1.0)
+
+    message = (
+        f"Found {len(code_blocks)} code blocks with classes/functions."
+        if passed
+        else "Missing pseudocode. PRP should include implementation code examples."
+    )
+
+    return CheckResult(
+        name="has_pseudocode",
+        passed=passed,
+        severity="critical" if indicators == 0 else "warning",
         message=message,
         score=score,
     )
