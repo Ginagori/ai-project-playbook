@@ -812,7 +812,69 @@ api_key = "sk-1234567890abcdef"  # ❌ WRONG!
 
 ---
 
-## 🔟 Project-Specific Notes
+## 🔟 Evaluation Criteria
+
+### Automatic Quality Gates
+
+The AI Project Playbook Agent runs automatic quality checks on generated artifacts.
+These checks ensure your CLAUDE.md, PRD, and feature plans meet minimum standards.
+
+**CLAUDE.md Quality Checks:**
+- Has all required sections (Core Principles, Tech Stack, Architecture, Code Style, Testing, Common Patterns)
+- No placeholder text (`{{PLACEHOLDER}}`, `TBD`, `TODO`)
+- Tech stack specifics (version numbers, package managers, frameworks)
+- Code examples in Common Patterns section
+- Architecture pattern specified with directory structure
+
+**PRD Quality Checks:**
+- Has success criteria (measurable, checkbox items)
+- Feature prioritization (P0/P1/P2)
+- No placeholder text
+- Minimum length (>500 characters)
+- Integration points documented
+
+**Feature Plan Quality Checks:**
+- File references (specific paths to create/modify)
+- Validation commands (linting, testing, type checking)
+- Integration points (what connects to what)
+- No placeholder text
+
+### Validation Loop (5 Levels)
+
+Every feature should pass this validation pyramid before being marked complete:
+
+```bash
+# Level 1: Syntax & Style
+{{BACKEND_LINT_COMMAND}}
+
+# Level 2: Type Safety
+{{BACKEND_TYPE_CHECK_COMMAND}}
+
+# Level 3: Unit Tests
+{{BACKEND_TEST_COMMAND}}
+
+# Level 4: Integration Tests
+{{INTEGRATION_TEST_COMMAND}}
+
+# Level 5: Build Verification
+{{BUILD_COMMAND}}
+```
+
+### Scoring
+
+Quality scores are calculated automatically:
+- **0.0-0.5**: Major issues found, artifact needs rework
+- **0.5-0.8**: Some improvements needed, review suggestions
+- **0.8-1.0**: Good quality, ready for use
+
+Severity levels for individual checks:
+- **Critical**: Must pass (type safety, no placeholders, required sections)
+- **Warning**: Should pass (code examples, file references)
+- **Info**: Nice to have (minimum length, architecture diagrams)
+
+---
+
+## 1️⃣1️⃣ Project-Specific Notes
 
 ### Known Issues / Tech Debt
 {{TECH_DEBT_NOTES}}

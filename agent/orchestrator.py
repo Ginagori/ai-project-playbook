@@ -51,9 +51,10 @@ DISCOVERY_QUESTIONS = [
 2. **API Backend** - REST/GraphQL API for mobile apps or integrations
 3. **Agent System** - Single AI agent with tools and memory
 4. **Multi-Agent System** - Multiple AI agents working together
+5. **Platform** - Complex multi-component system (marketplace, plugins, multi-channel)
 
-Please respond with the number (1-4) or describe if it's something else.""",
-        "options": {"1": "saas", "2": "api", "3": "agent", "4": "multi-agent"},
+Please respond with the number (1-5) or describe if it's something else.""",
+        "options": {"1": "saas", "2": "api", "3": "agent", "4": "multi-agent", "5": "platform"},
     },
     {
         "id": "scale",
@@ -170,6 +171,10 @@ def discovery_node(state: OrchestratorState) -> OrchestratorState:
         project.current_phase = Phase.PLANNING
         project.needs_user_input = False
 
+        # Auto-capture discovery lessons
+        from agent.meta_learning.capture import auto_capture_phase_lesson
+        auto_capture_phase_lesson("discovery", project)
+
         # Generate summary
         ts = project.tech_stack
         summary = f"""
@@ -231,116 +236,47 @@ I need to understand a few things to recommend the best approach.
 def planning_node(state: OrchestratorState) -> OrchestratorState:
     """
     Handle Planning phase - generate CLAUDE.md and PRD.
+
+    Generates project-type-specific artifacts and evaluates their quality.
     """
+    from agent.evals import ArtifactEvaluator
+
     project = state.project
-    ts = project.tech_stack
+    evaluator = ArtifactEvaluator()
 
     # Generate CLAUDE.md
-    claude_md = f"""# {project.objective}
-
-## Core Principles
-
-- **TYPE_SAFETY**: All functions must have type hints
-- **VERBOSE_NAMING**: Use descriptive names (get_user_by_email, not get_user)
-- **AI_FRIENDLY_LOGGING**: JSON structured logs with fix_suggestion field
-- **KISS**: Keep solutions simple, avoid over-engineering
-- **YAGNI**: Don't build features until needed
-
-## Tech Stack
-
-- **Frontend**: {ts.frontend or "N/A"}
-- **Backend**: {ts.backend or "N/A"}
-- **Database**: {ts.database or "N/A"}
-- **Package Manager**: uv (Python) / pnpm (Node)
-- **Testing**: pytest / vitest
-
-## Architecture
-
-- **Pattern**: Vertical Slice Architecture
-- **API Style**: REST with OpenAPI documentation
-- **Auth**: JWT with refresh tokens
-- **Multi-tenancy**: Row-Level Security (if applicable)
-
-## Code Style
-
-- Use snake_case for Python, camelCase for TypeScript
-- Maximum line length: 100 characters
-- Docstrings required for public functions
-- Type hints required for all function parameters and returns
-
-## Testing
-
-- Unit tests mirror source structure
-- Integration tests in tests/integration/
-- Minimum 80% coverage for core features
-- Use pytest markers: @pytest.mark.unit, @pytest.mark.integration
-
-## Common Patterns
-
-### Service Pattern (Python)
-```python
-class UserService:
-    def __init__(self, db: Database):
-        self.db = db
-
-    async def get_user_by_email(self, email: str) -> User | None:
-        return await self.db.users.find_one({{"email": email}})
-```
-
-### API Handler Pattern
-```python
-@router.get("/users/{{user_id}}")
-async def get_user(user_id: str, service: UserService = Depends()) -> UserResponse:
-    user = await service.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return UserResponse.from_orm(user)
-```
-"""
+    claude_md = _generate_claude_md(project)
 
     # Generate PRD
-    prd = f"""# Product Requirements Document
+    prd = _generate_prd(project)
 
-## Executive Summary
+    # Evaluate artifacts
+    claude_eval = evaluator.evaluate_claude_md(claude_md)
+    prd_eval = evaluator.evaluate_prd(prd)
 
-**Product**: {project.objective}
-**Type**: {project.project_type.value if project.project_type else "Application"}
-**Target Scale**: {project.scale.value}
-
-## Mission
-
-Build a {project.project_type.value if project.project_type else "application"} that {project.objective}.
-
-## MVP Scope
-
-### Core Features (P0)
-1. User authentication (signup, login, password reset)
-2. Core functionality based on objective
-3. Basic admin dashboard
-
-### Nice-to-Have (P1)
-1. Email notifications
-2. User preferences
-3. Analytics dashboard
-
-## Success Criteria
-
-- [ ] Users can complete core workflow end-to-end
-- [ ] System handles expected load for {project.scale.value} phase
-- [ ] All critical paths have test coverage
-- [ ] Deployment pipeline working
-
-## Tech Stack
-
-- Frontend: {ts.frontend or "N/A"}
-- Backend: {ts.backend or "N/A"}
-- Database: {ts.database or "N/A"}
-"""
+    # Store evaluation scores
+    project.validation_results["claude_md_score"] = claude_eval.score
+    project.validation_results["prd_score"] = prd_eval.score
+    project.validation_results["claude_md_passed"] = claude_eval.passed
+    project.validation_results["prd_passed"] = prd_eval.passed
 
     project.claude_md = claude_md
     project.prd = prd
     project.current_phase = Phase.ROADMAP
     project.needs_user_input = True
+
+    # Auto-capture planning lessons
+    from agent.meta_learning.capture import auto_capture_phase_lesson
+    auto_capture_phase_lesson("planning", project)
+
+    # Build eval summary
+    eval_summary = f"""
+### Artifact Quality
+
+{claude_eval.format_report()}
+
+{prd_eval.format_report()}
+"""
 
     output = f"""
 ## Planning Phase Complete!
@@ -363,6 +299,10 @@ Build a {project.project_type.value if project.project_type else "application"} 
 
 ---
 
+{eval_summary}
+
+---
+
 ## Next: Roadmap Phase
 
 I'll break this down into implementable features.
@@ -375,6 +315,285 @@ Reply with "continue" to proceed to Roadmap.
         agent_output=output,
         should_continue=True,
     )
+
+
+def _generate_claude_md(project: ProjectState) -> str:
+    """Generate CLAUDE.md content based on project type."""
+    ts = project.tech_stack
+    pt = project.project_type
+
+    # Base principles (universal)
+    principles = """- **TYPE_SAFETY**: All functions must have type hints
+- **VERBOSE_NAMING**: Use descriptive names (get_user_by_email, not get_user)
+- **AI_FRIENDLY_LOGGING**: JSON structured logs with fix_suggestion field
+- **KISS**: Keep solutions simple, avoid over-engineering
+- **YAGNI**: Don't build features until needed"""
+
+    # Project-type-specific sections
+    if pt == ProjectType.PLATFORM:
+        arch_section = """- **Pattern**: Modular Platform Architecture (Plugin-based)
+- **API Style**: REST with OpenAPI + WebSocket for real-time
+- **Auth**: JWT with refresh tokens + API keys for service-to-service
+- **Multi-tenancy**: Row-Level Security with tenant context
+- **Plugin System**: Dynamic tool registration with schema validation
+- **Agent Communication**: Message bus for inter-agent coordination
+- **Memory**: Hybrid search (vector + keyword) with auto-capture"""
+
+        extra_patterns = """
+### Plugin Registration Pattern
+```python
+class PluginRegistry:
+    def __init__(self):
+        self._plugins: dict[str, PluginManifest] = {{}}
+
+    def register(self, manifest: PluginManifest) -> None:
+        self._plugins[manifest.id] = manifest
+
+    def get_tools(self, plugin_id: str) -> list[Tool]:
+        return self._plugins[plugin_id].tools
+```
+
+### Agent Message Pattern
+```python
+class AgentMessage(BaseModel):
+    from_agent: str
+    to_agent: str
+    content: str
+    message_type: str  # "request", "response", "broadcast"
+    context: dict[str, Any] = {{}}
+```
+
+### Heartbeat Pattern
+```python
+class HeartbeatSchedule(BaseModel):
+    schedule_type: str  # "every", "at", "cron"
+    expression: str     # "5m", "09:00", "0 9 * * *"
+    payload: dict[str, Any] = {{}}
+```
+"""
+    elif pt == ProjectType.AGENT:
+        arch_section = """- **Pattern**: Agent Core with Tool Registry
+- **API Style**: REST with streaming support
+- **Memory**: Conversation history + persistent memory
+- **Tools**: Registered via decorator pattern
+- **Guardrails**: Input/output validation gates"""
+
+        extra_patterns = """
+### Agent Tool Pattern
+```python
+@agent.tool
+async def search_knowledge(query: str) -> str:
+    results = await knowledge_base.search(query)
+    return format_results(results)
+```
+
+### Memory Pattern
+```python
+class AgentMemory:
+    def __init__(self, session_id: str):
+        self.short_term: list[Message] = []
+        self.long_term: VectorStore = VectorStore(session_id)
+
+    async def recall(self, query: str) -> list[str]:
+        return await self.long_term.search(query, limit=5)
+```
+"""
+    elif pt == ProjectType.MULTI_AGENT:
+        arch_section = """- **Pattern**: Supervisor + Specialized Agents
+- **API Style**: REST with WebSocket for agent events
+- **Orchestration**: LangGraph state machine
+- **Communication**: Shared state + message passing
+- **Factory**: Agent Registry with dynamic instantiation"""
+
+        extra_patterns = """
+### Supervisor Pattern
+```python
+class Supervisor:
+    def __init__(self, agents: dict[str, BaseAgent]):
+        self.agents = agents
+
+    async def route(self, task: str) -> AgentResult:
+        agent_name = self._select_agent(task)
+        return await self.agents[agent_name].execute(task)
+```
+
+### Agent Factory Pattern
+```python
+class AgentRegistry:
+    _agents: dict[str, type[BaseAgent]] = {{}}
+
+    @classmethod
+    def register(cls, name: str):
+        def decorator(agent_cls):
+            cls._agents[name] = agent_cls
+            return agent_cls
+        return decorator
+```
+"""
+    else:  # SAAS, API, default
+        arch_section = """- **Pattern**: Vertical Slice Architecture
+- **API Style**: REST with OpenAPI documentation
+- **Auth**: JWT with refresh tokens
+- **Multi-tenancy**: Row-Level Security (if applicable)"""
+
+        extra_patterns = """
+### Service Pattern (Python)
+```python
+class UserService:
+    def __init__(self, db: Database):
+        self.db = db
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        return await self.db.users.find_one({{"email": email}})
+```
+
+### API Handler Pattern
+```python
+@router.get("/users/{{user_id}}")
+async def get_user(user_id: str, service: UserService = Depends()) -> UserResponse:
+    user = await service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserResponse.from_orm(user)
+```
+"""
+
+    # Determine package manager and test framework
+    is_python = "python" in (ts.backend or "").lower() or "fastapi" in (ts.backend or "").lower() or "django" in (ts.backend or "").lower()
+    pkg_manager = "uv (Python)" if is_python else "pnpm (Node)"
+    test_framework = "pytest" if is_python else "vitest"
+
+    claude_md = f"""# {project.objective}
+
+## Core Principles
+
+{principles}
+
+## Tech Stack
+
+- **Frontend**: {ts.frontend or "N/A"}
+- **Backend**: {ts.backend or "N/A"}
+- **Database**: {ts.database or "N/A"}
+- **Package Manager**: {pkg_manager}
+- **Testing**: {test_framework}
+
+## Architecture
+
+{arch_section}
+
+## Code Style
+
+- Use {"snake_case" if is_python else "camelCase"} for {"Python" if is_python else "TypeScript"}
+- Maximum line length: 100 characters
+- Docstrings required for public functions
+- Type hints required for all function parameters and returns
+
+## Testing
+
+- Unit tests mirror source structure
+- Integration tests in tests/integration/
+- Minimum 80% coverage for core features
+- {"Use pytest markers: @pytest.mark.unit, @pytest.mark.integration" if is_python else "Use vitest describe/it pattern with test.each for parameterized tests"}
+
+## Common Patterns
+{extra_patterns}"""
+
+    return claude_md
+
+
+def _generate_prd(project: ProjectState) -> str:
+    """Generate PRD content based on project type."""
+    ts = project.tech_stack
+    pt = project.project_type
+
+    # Project-type-specific features
+    if pt == ProjectType.PLATFORM:
+        core_features = """1. User authentication with role-based access (admin, developer, end-user)
+2. Core platform engine (knowledge base, data management)
+3. Agent/employee registry and lifecycle management
+4. Plugin architecture for extensibility
+5. Real-time communication (WebSocket)
+6. Admin dashboard with platform metrics"""
+        nice_to_have = """1. Marketplace for third-party agents/plugins
+2. Token-based billing system
+3. Multi-channel delivery (web, Slack, WhatsApp)
+4. Agent observability dashboard (Langfuse)
+5. Heartbeat/proactive agent scheduling"""
+    elif pt == ProjectType.AGENT:
+        core_features = """1. Agent with system prompt and tool execution
+2. Conversation memory (short-term + long-term)
+3. Tool registry with dynamic loading
+4. API interface for agent interaction
+5. Input/output validation guardrails"""
+        nice_to_have = """1. Streaming responses
+2. Multi-modal support
+3. Memory search and curation
+4. Usage analytics"""
+    elif pt == ProjectType.MULTI_AGENT:
+        core_features = """1. Agent registry and factory pattern
+2. Supervisor/router for task coordination
+3. Individual specialized agents (3-5)
+4. Inter-agent communication protocol
+5. Shared state management
+6. API interface for system interaction"""
+        nice_to_have = """1. Dynamic agent spawning
+2. Agent performance metrics
+3. Human-in-the-loop approval gates
+4. Parallel execution optimization"""
+    else:  # SAAS, API
+        core_features = """1. User authentication (signup, login, password reset)
+2. Core functionality based on objective
+3. Basic admin dashboard
+4. API with CRUD operations
+5. Data validation and error handling"""
+        nice_to_have = """1. Email notifications
+2. User preferences and settings
+3. Analytics dashboard
+4. Export/import functionality"""
+
+    prd = f"""# Product Requirements Document
+
+## Executive Summary
+
+**Product**: {project.objective}
+**Type**: {pt.value if pt else "Application"}
+**Target Scale**: {project.scale.value}
+
+## Mission
+
+Build a {pt.value if pt else "application"} that {project.objective}.
+
+## MVP Scope
+
+### Core Features (P0)
+{core_features}
+
+### Nice-to-Have (P1)
+{nice_to_have}
+
+## Success Criteria
+
+- [ ] Users can complete core workflow end-to-end
+- [ ] System handles expected load for {project.scale.value} phase
+- [ ] All critical paths have test coverage (>80%)
+- [ ] Deployment pipeline working
+- [ ] API documentation complete (OpenAPI)
+
+## Tech Stack
+
+- Frontend: {ts.frontend or "N/A"}
+- Backend: {ts.backend or "N/A"}
+- Database: {ts.database or "N/A"}
+
+## Known Gotchas
+
+- Ensure environment variables are never committed to git
+- Use atomic database operations for concurrent access
+- Validate all user inputs at API boundary
+- Test error paths, not just happy paths
+"""
+
+    return prd
 
 
 def roadmap_node(state: OrchestratorState) -> OrchestratorState:
@@ -411,6 +630,17 @@ def roadmap_node(state: OrchestratorState) -> OrchestratorState:
             Feature(name="Communication", description="Implement inter-agent messaging and state sharing"),
             Feature(name="API Interface", description="Create FastAPI endpoints to interact with system"),
         ]
+    elif project.project_type == ProjectType.PLATFORM:
+        features = [
+            Feature(name="Project Setup", description="Initialize project with tech stack, monorepo structure, configure tooling"),
+            Feature(name="Authentication", description="Implement user auth with role-based access (admin, developer, end-user)"),
+            Feature(name="Core Data Models", description="Define database schema for platform entities, tenants, and relationships"),
+            Feature(name="Plugin Architecture", description="Create plugin registry, dynamic tool loading, and SDK for extensions"),
+            Feature(name="Agent Registry", description="Build agent/employee lifecycle management with factory pattern"),
+            Feature(name="Real-time Communication", description="Implement WebSocket for agent events and inter-agent messaging"),
+            Feature(name="Dashboard", description="Create admin dashboard with platform metrics, agent status, and user management"),
+            Feature(name="API Endpoints", description="Create REST + WebSocket endpoints for all platform operations"),
+        ]
     else:  # API or default
         features = [
             Feature(name="Project Setup", description="Initialize project with tech stack, create folder structure"),
@@ -423,6 +653,10 @@ def roadmap_node(state: OrchestratorState) -> OrchestratorState:
     project.features = features
     project.current_phase = Phase.IMPLEMENTATION
     project.needs_user_input = True
+
+    # Auto-capture roadmap lessons
+    from agent.meta_learning.capture import auto_capture_phase_lesson
+    auto_capture_phase_lesson("roadmap", project)
 
     features_list = "\n".join([
         f"{i+1}. **{f.name}** - {f.description}"
@@ -529,13 +763,27 @@ Reply with "plan" to see the implementation plan, or "next" when done.
     # Generate feature-specific implementation plan
     plan = generate_feature_plan(feature.name, feature.description, ts, project.project_type)
 
-    # Search for relevant playbook content
-    search_results = search_keyword(feature.name, max_results=3)
+    # Evaluate the generated plan
+    from agent.evals import ArtifactEvaluator
+    evaluator = ArtifactEvaluator()
+    plan_eval = evaluator.evaluate_plan(plan)
+
+    # Store plan quality score
+    project.validation_results[f"plan_{feature.name}_score"] = plan_eval.score
+
+    # Search for relevant playbook content (using hybrid search)
+    from agent.tools.playbook_rag import search_hybrid
+    search_results = search_hybrid(feature.name, max_results=3)
     playbook_refs = ""
     if search_results:
         playbook_refs = "\n### Relevant Playbook References\n"
         for result in search_results[:3]:
             playbook_refs += f"- `{result.file}`: {result.title}\n"
+
+    # Plan quality indicator
+    quality_indicator = f"**Plan Quality**: {plan_eval.score:.0%}"
+    if plan_eval.suggestions:
+        quality_indicator += " | Suggestions: " + "; ".join(plan_eval.suggestions[:2])
 
     output = f"""
 ## PIV Loop - Feature {current_idx + 1}/{len(project.features)}: {feature.name}
@@ -543,6 +791,7 @@ Reply with "plan" to see the implementation plan, or "next" when done.
 ### P - Plan
 
 **Objective**: {feature.description}
+{quality_indicator}
 
 {plan}
 
@@ -583,8 +832,56 @@ After implementation, run:
     )
 
 
+def generate_validation_loop(tech_stack) -> str:
+    """Generate validation commands based on tech stack."""
+    is_python = "python" in (tech_stack.backend or "").lower() or "fastapi" in (tech_stack.backend or "").lower()
+
+    if is_python:
+        return """
+**Validation Loop:**
+```bash
+# Level 1: Syntax & Style
+ruff check src/ --fix
+ruff format src/
+
+# Level 2: Type Safety
+mypy src/ --ignore-missing-imports
+
+# Level 3: Unit Tests
+pytest tests/ -v --tb=short
+
+# Level 4: Integration Tests (if applicable)
+pytest tests/integration/ -v --tb=short
+
+# Level 5: Build verification
+python -c "from src.main import app; print('Build OK')"
+```"""
+    else:
+        return """
+**Validation Loop:**
+```bash
+# Level 1: Syntax & Style
+npm run lint
+npx prettier --check src/
+
+# Level 2: Type Safety
+npx tsc --noEmit
+
+# Level 3: Unit Tests
+npm test
+
+# Level 4: Integration Tests (if applicable)
+npm run test:integration
+
+# Level 5: Build verification
+npm run build
+```"""
+
+
 def generate_feature_plan(name: str, description: str, tech_stack, project_type) -> str:
-    """Generate a detailed implementation plan for a feature."""
+    """Generate a detailed implementation plan for a feature in PRP-inspired format."""
+
+    validation = generate_validation_loop(tech_stack)
 
     # Feature-specific plan templates
     plans = {
@@ -714,16 +1011,17 @@ DELETE /api/v1/resources/:id  - Delete
 
     # Return specific plan or generate generic one
     if name in plans:
-        return plans[name]
+        return plans[name] + validation
 
     # Generic plan for unknown features
+    feature_slug = name.lower().replace(" ", "_")
     return f"""
 **Files to create:**
-- `src/{name.lower().replace(" ", "_")}/` - Feature directory
-- `src/{name.lower().replace(" ", "_")}/router.py` - API endpoints
-- `src/{name.lower().replace(" ", "_")}/service.py` - Business logic
-- `src/{name.lower().replace(" ", "_")}/models.py` - Data models
-- `tests/{name.lower().replace(" ", "_")}/` - Tests
+- `src/{feature_slug}/` - Feature directory
+- `src/{feature_slug}/router.py` - API endpoints
+- `src/{feature_slug}/service.py` - Business logic
+- `src/{feature_slug}/models.py` - Data models
+- `tests/{feature_slug}/` - Tests
 
 **Tasks:**
 1. Create feature directory structure
@@ -733,6 +1031,12 @@ DELETE /api/v1/resources/:id  - Delete
 5. Write unit tests
 6. Write integration tests
 7. Update API documentation
+
+**Integration Points:**
+- Connects to database via ORM models
+- Requires authentication middleware
+- Exposes REST endpoints under `/api/v1/{feature_slug}`
+{validation}
 """
 
 
@@ -863,6 +1167,10 @@ kubectl get pods -l app={project.objective.lower().replace(' ', '-')[:20]}
 """
 
     project.current_phase = Phase.COMPLETED
+
+    # Auto-capture deployment lessons
+    from agent.meta_learning.capture import auto_capture_phase_lesson
+    auto_capture_phase_lesson("deployment", project)
 
     output = f"""
 ## Deployment Phase

@@ -17,6 +17,7 @@ from agent.meta_learning.capture import (
     capture_project_outcome,
     extract_patterns,
     calculate_success_score,
+    auto_capture_phase_lesson,
 )
 from agent.meta_learning.suggest import (
     find_similar_projects,
@@ -38,6 +39,7 @@ __all__ = [
     "capture_project_outcome",
     "extract_patterns",
     "calculate_success_score",
+    "auto_capture_phase_lesson",
     # Suggest
     "find_similar_projects",
     "get_recommendations",

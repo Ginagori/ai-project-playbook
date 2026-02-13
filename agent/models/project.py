@@ -12,6 +12,7 @@ class ProjectType(str, Enum):
     API = "api"
     AGENT = "agent"
     MULTI_AGENT = "multi-agent"
+    PLATFORM = "platform"  # Complex multi-component systems (e.g., NOVA)
 
 
 class ScalePhase(str, Enum):

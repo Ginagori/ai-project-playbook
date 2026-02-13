@@ -441,6 +441,97 @@ async def get_claude_md(session_id: str) -> str:
 """
 
 
+@mcp.tool(name="playbook_get_prp")
+async def get_prp(session_id: str, feature_name: str = "") -> str:
+    """
+    Get a feature plan in PRP (Project Requirements Plan) format.
+
+    If feature_name is provided, returns the plan for that specific feature.
+    Otherwise returns the PRD with PRP annotations.
+
+    Args:
+        session_id: The session ID
+        feature_name: Optional feature name to get specific plan
+
+    Returns:
+        PRP-formatted plan or error message
+    """
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found."
+
+    state = sessions[session_id]
+    project = state.project
+
+    if feature_name:
+        # Find the specific feature
+        feature = None
+        for f in project.features:
+            if f.name.lower() == feature_name.lower():
+                feature = f
+                break
+
+        if not feature:
+            available = ", ".join(f.name for f in project.features)
+            return f"Feature '{feature_name}' not found. Available: {available}"
+
+        # Generate PRP-style plan for the feature
+        from agent.orchestrator import generate_feature_plan, generate_validation_loop
+        plan = generate_feature_plan(
+            feature.name, feature.description,
+            project.tech_stack, project.project_type,
+        )
+        validation = generate_validation_loop(project.tech_stack)
+
+        # Get quality score if available
+        plan_score = project.validation_results.get(f"plan_{feature.name}_score", "N/A")
+
+        return f"""## PRP: {feature.name}
+
+### Goal
+{feature.description}
+
+### Context
+- **Project**: {project.objective}
+- **Type**: {project.project_type.value if project.project_type else "N/A"}
+- **Tech Stack**: {project.tech_stack.frontend or "N/A"} + {project.tech_stack.backend or "N/A"} + {project.tech_stack.database or "N/A"}
+- **Quality Score**: {plan_score}
+
+### Implementation Blueprint
+{plan}
+
+### Validation Loop
+{validation}
+
+### Anti-Patterns
+- Do NOT leave TODOs or placeholder code
+- Do NOT skip tests for "simple" features
+- Do NOT hardcode configuration values
+- Do NOT ignore error handling at API boundaries
+"""
+    else:
+        # Return PRD with PRP annotations
+        if not project.prd:
+            return "PRD has not been generated yet. Complete the Planning phase first."
+
+        return f"""## PRP Overview for Session {session_id}
+
+### Project
+- **Objective**: {project.objective}
+- **Type**: {project.project_type.value if project.project_type else "N/A"}
+- **Features**: {len(project.features)} defined
+
+### PRD Content
+```markdown
+{project.prd}
+```
+
+### Feature Plans Available
+Use `playbook_get_prp session_id="{session_id}" feature_name="<name>"` for detailed PRP:
+
+{chr(10).join(f'- **{f.name}**: {f.description}' for f in project.features)}
+"""
+
+
 @mcp.tool(name="playbook_get_prd")
 async def get_prd(session_id: str) -> str:
     """
@@ -468,6 +559,74 @@ async def get_prd(session_id: str) -> str:
 
 *Copy this content to your project's docs/PRD.md file.*
 """
+
+
+# =============================================================================
+# Artifact Evaluation Tools
+# =============================================================================
+
+
+@mcp.tool(name="playbook_system_review")
+async def system_review(session_id: str) -> str:
+    """
+    Generate a system review for a project.
+
+    Meta-analysis of plan vs execution that evaluates process quality,
+    artifact quality, and execution confidence. Analyzes the SYSTEM,
+    not just the code.
+
+    Args:
+        session_id: The session ID to review
+
+    Returns:
+        Comprehensive system review report with confidence score (1-10)
+    """
+    if session_id not in sessions:
+        return f"Error: Session '{session_id}' not found."
+
+    from agent.system_review import generate_system_review
+
+    state = sessions[session_id]
+    return generate_system_review(state.project)
+
+
+@mcp.tool(name="playbook_evaluate_artifact")
+async def evaluate_artifact(artifact_type: str, content: str) -> str:
+    """
+    Evaluate the quality of a generated artifact.
+
+    Runs rule-based checks on CLAUDE.md, PRD, or feature plans to ensure
+    they meet quality standards before use.
+
+    Args:
+        artifact_type: Type of artifact - "claude_md", "prd", or "plan"
+        content: The artifact content to evaluate
+
+    Returns:
+        Quality report with score, checks passed/failed, and suggestions
+    """
+    from agent.evals import ArtifactEvaluator
+
+    evaluator = ArtifactEvaluator()
+    result = evaluator.evaluate(artifact_type, content)
+
+    output = f"""## Artifact Evaluation
+
+{result.format_report()}
+
+### Summary
+- **Type**: {artifact_type}
+- **Score**: {result.score:.0%}
+- **Status**: {"PASSED" if result.passed else "NEEDS IMPROVEMENT"}
+- **Checks**: {sum(1 for c in result.checks if c.passed)}/{len(result.checks)} passed
+"""
+
+    if result.suggestions:
+        output += "\n### How to Improve\n"
+        for i, suggestion in enumerate(result.suggestions, 1):
+            output += f"{i}. {suggestion}\n"
+
+    return output
 
 
 # =============================================================================

@@ -325,3 +325,150 @@ def _get_completed_phases(project: ProjectState) -> list[str]:
         pass
 
     return completed
+
+
+# =============================================================================
+# Auto-Capture — extract lessons per-phase (not just at project completion)
+# Inspired by OpenClaw's auto-capture triggers
+# =============================================================================
+
+def auto_capture_phase_lesson(phase: str, project: ProjectState) -> list[LessonLearned]:
+    """
+    Auto-capture lessons when completing a phase.
+
+    Unlike capture_project_outcome() which runs at project end,
+    this runs after each phase transition to capture incremental learning.
+
+    Args:
+        phase: The phase just completed (discovery, planning, roadmap, implementation, deployment)
+        project: Current project state
+
+    Returns:
+        List of lessons captured (also stored in DB)
+    """
+    lessons = []
+    project_type = project.project_type.value if project.project_type else "unknown"
+    tech_stack = []
+    if project.tech_stack.frontend:
+        tech_stack.append(project.tech_stack.frontend)
+    if project.tech_stack.backend:
+        tech_stack.append(project.tech_stack.backend)
+    if project.tech_stack.database:
+        tech_stack.append(project.tech_stack.database)
+
+    if phase == "discovery":
+        # Capture tech stack choice
+        if tech_stack:
+            tech_combo = " + ".join(tech_stack)
+            lessons.append(LessonLearned(
+                category=PatternCategory.TECH_STACK,
+                title=f"Tech stack chosen: {tech_combo}",
+                description=f"Selected {tech_combo} for {project_type} project: {project.objective[:80]}",
+                context=f"Discovery phase for {project_type}",
+                recommendation=f"Consider {tech_combo} for similar {project_type} projects",
+                confidence=0.6,  # Lower confidence — not proven yet
+                project_types=[project_type],
+                tech_stacks=tech_stack,
+                tags=["tech-stack", "discovery", "auto-captured"],
+            ))
+
+    elif phase == "planning":
+        # Capture architecture decisions from CLAUDE.md
+        if project.claude_md:
+            claude_lower = project.claude_md.lower()
+
+            # Detect architecture pattern
+            arch_patterns = {
+                "vertical slice": "Vertical Slice Architecture",
+                "clean architecture": "Clean Architecture",
+                "plugin": "Plugin Architecture",
+                "microservices": "Microservices",
+                "monolith": "Monolithic Architecture",
+                "event-driven": "Event-Driven Architecture",
+            }
+            for pattern_key, pattern_name in arch_patterns.items():
+                if pattern_key in claude_lower:
+                    lessons.append(LessonLearned(
+                        category=PatternCategory.ARCHITECTURE,
+                        title=f"Architecture: {pattern_name}",
+                        description=f"Used {pattern_name} for {project_type} project",
+                        context=f"Planning phase — architecture decision",
+                        recommendation=f"{pattern_name} works well for {project_type} projects",
+                        confidence=0.65,
+                        project_types=[project_type],
+                        tags=["architecture", "planning", "auto-captured"],
+                    ))
+                    break  # Only capture the first match
+
+        # Capture artifact quality if available
+        claude_score = project.validation_results.get("claude_md_score")
+        prd_score = project.validation_results.get("prd_score")
+        if claude_score is not None and prd_score is not None:
+            avg_score = (claude_score + prd_score) / 2
+            if avg_score >= 0.8:
+                lessons.append(LessonLearned(
+                    category=PatternCategory.WORKFLOW,
+                    title="High-quality planning artifacts",
+                    description=f"CLAUDE.md ({claude_score:.0%}) and PRD ({prd_score:.0%}) scored well",
+                    context="Planning phase quality",
+                    recommendation="Maintain detailed CLAUDE.md and PRD for better outcomes",
+                    confidence=0.7,
+                    tags=["workflow", "quality", "auto-captured"],
+                ))
+
+    elif phase == "roadmap":
+        # Capture feature count and breakdown strategy
+        if project.features:
+            count = len(project.features)
+            feature_names = [f.name for f in project.features[:5]]
+            lessons.append(LessonLearned(
+                category=PatternCategory.WORKFLOW,
+                title=f"Roadmap: {count} features for {project_type}",
+                description=f"Broke down {project_type} into {count} features: {', '.join(feature_names)}",
+                context=f"Roadmap phase for {project_type}",
+                recommendation=f"A {project_type} project typically needs {count} core features",
+                confidence=0.55,
+                project_types=[project_type],
+                tags=["roadmap", "features", "auto-captured"],
+            ))
+
+    elif phase == "implementation":
+        # Capture patterns used per feature
+        for feature in project.features:
+            if feature.status == "completed":
+                plan_score = project.validation_results.get(f"plan_{feature.name}_score")
+                if plan_score and plan_score >= 0.7:
+                    lessons.append(LessonLearned(
+                        category=PatternCategory.WORKFLOW,
+                        title=f"Feature pattern: {feature.name}",
+                        description=f"Successfully implemented {feature.name} for {project_type}",
+                        context=f"Implementation of {feature.name}",
+                        recommendation=f"Reuse the {feature.name} implementation pattern for similar projects",
+                        confidence=0.6,
+                        project_types=[project_type],
+                        tags=["implementation", "feature-pattern", "auto-captured"],
+                    ))
+
+    elif phase == "deployment":
+        # Capture deployment config choices
+        if project.deployment_configs:
+            scale = project.scale.value if project.scale else "mvp"
+            config_types = list(project.deployment_configs.keys())
+            lessons.append(LessonLearned(
+                category=PatternCategory.DEPLOYMENT,
+                title=f"Deployment: {scale} with {', '.join(config_types)}",
+                description=f"Generated {len(config_types)} deployment configs for {scale} scale",
+                context=f"Deploying {project_type} at {scale} scale",
+                recommendation=f"Use {', '.join(config_types)} configs for {scale} {project_type} deployments",
+                confidence=0.65,
+                project_types=[project_type],
+                tags=["deployment", scale, "auto-captured"],
+            ))
+
+    # Store lessons in database
+    if lessons:
+        db = get_lessons_db()
+        for lesson in lessons:
+            db.add_lesson(lesson)
+
+    return lessons

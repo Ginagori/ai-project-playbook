@@ -12,6 +12,16 @@ The AI Project Playbook Agent is a **Project Manager AI** that can:
 4. **Implementation**: Execute PIV Loop (Plan → Implement → Validate) for each feature
 5. **Deployment**: Generate deployment configs for MVP → Growth → Scale → Enterprise
 
+### What's New (v2)
+
+- **Artifact Evaluation**: Automatic quality checks on CLAUDE.md, PRD, and feature plans (0.0-1.0 scoring)
+- **System Review**: Meta-analysis of plan vs execution with confidence scoring (1-10)
+- **PRP Format**: Project Requirements Plan — enhanced planning for agent-to-agent communication
+- **Hybrid Search**: Category-based relevance (70%) + keyword matching (30%) for smarter playbook search
+- **Auto-Capture**: Automatically captures lessons at each phase transition
+- **Platform Project Type**: Support for complex multi-component systems (marketplaces, agent platforms)
+- **6 New Playbook Guides**: Agent Evals, Observability, Security, SaaS Monetization, Memory Architecture, Marketplace Development
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -94,31 +104,34 @@ In Claude Code, you can now use these tools:
 ```
 ai-project-playbook/
 ├── SKILL.md                # Anthropic Skill definition
-├── playbook/               # Complete methodology (63 files)
-│   ├── 00-overview/
-│   ├── 01-discovery/
-│   ├── 02-planning/
-│   ├── 03-roadmap/
-│   ├── 04-implementation/
-│   ├── 05-deployment/
-│   ├── 06-advanced/
-│   ├── templates/
-│   └── examples/
+├── playbook/               # Complete methodology (~71 files, ~39K lines)
+│   ├── 00-overview/        # Philosophy, quick start
+│   ├── 01-discovery/       # Discovery questions, tech stack selector
+│   ├── 02-planning/        # CLAUDE.md creation, PRD, security
+│   ├── 03-roadmap/         # Slash commands, plan templates, feature breakdown
+│   ├── 04-implementation/  # PIV Loop, validation pyramid, system review guide
+│   ├── 05-deployment/      # MVP → Enterprise deployment configs
+│   ├── 06-advanced/        # Agent evals, observability, security, memory, marketplace, monetization
+│   ├── templates/          # CLAUDE.md template, PRD template, PRP template
+│   └── examples/           # Real project examples
 ├── agent/                  # Agent implementation
-│   ├── models/             # Pydantic models
-│   ├── phases/             # Phase implementations
-│   ├── tools/              # Agent tools
-│   ├── factory/            # Multi-agent patterns
+│   ├── models/             # Pydantic models (ProjectState, ProjectType)
+│   ├── evals/              # Artifact evaluation (rules, scoring)
+│   ├── tools/              # Agent tools (RAG with hybrid search)
+│   ├── factory/            # Multi-agent patterns (6 patterns)
 │   ├── specialized/        # Specialized agents (Researcher, Coder, etc.)
-│   └── meta_learning/      # Pattern capture & recommendations
+│   ├── meta_learning/      # Pattern capture, recommendations, auto-capture
+│   └── system_review.py    # Meta-analysis of plan vs execution
 ├── mcp_server/             # MCP Server
-│   └── playbook_mcp.py     # Main server
+│   └── playbook_mcp.py     # Main server (30 tools)
+├── .claude/commands/       # Slash commands
+│   └── system-review.md    # /system-review command
 ├── scripts/                # Utilities
 │   └── index_playbook.py   # RAG indexer
 └── references/             # Quick navigation guides
 ```
 
-## MCP Tools
+## MCP Tools (30 total)
 
 ### Project Management Tools (10)
 
@@ -127,7 +140,7 @@ ai-project-playbook/
 | `playbook_start_project` | Start a new project with an objective |
 | `playbook_continue` | Continue from where you left off |
 | `playbook_answer` | Answer agent's question |
-| `playbook_search` | Search the playbook |
+| `playbook_search` | Search the playbook (hybrid: 70% category + 30% keyword) |
 | `playbook_get_status` | Get project status |
 | `playbook_list_sessions` | List all active sessions (local + team) |
 | `playbook_get_claude_md` | Get generated CLAUDE.md |
@@ -135,7 +148,7 @@ ai-project-playbook/
 | `playbook_link_repo` | Link a GitHub repository to a project |
 | `playbook_get_repo` | Get the repository URL for a project |
 
-### Agent Factory Tools
+### Agent Factory Tools (8)
 
 | Tool | Description |
 |------|-------------|
@@ -148,7 +161,7 @@ ai-project-playbook/
 | `playbook_generate_code` | Generate code (API, service, component, etc.) |
 | `playbook_generate_tests` | Generate tests for code |
 
-### Meta-Learning Tools
+### Meta-Learning Tools (6)
 
 | Tool | Description |
 |------|-------------|
@@ -159,7 +172,7 @@ ai-project-playbook/
 | `playbook_learning_stats` | View meta-learning database statistics |
 | `playbook_add_lesson` | Manually add a lesson learned |
 
-### Team Tools (Supabase)
+### Team Tools (3)
 
 | Tool | Description |
 |------|-------------|
@@ -167,12 +180,23 @@ ai-project-playbook/
 | `playbook_share_lesson` | Share a lesson with the team |
 | `playbook_team_lessons` | View team's shared lessons |
 
+### Quality & Review Tools (3) — NEW
+
+| Tool | Description |
+|------|-------------|
+| `playbook_evaluate_artifact` | Run quality checks on CLAUDE.md, PRD, or feature plans |
+| `playbook_system_review` | Meta-analysis of plan vs execution (confidence 1-10) |
+| `playbook_get_prp` | Get feature plan in PRP format (agent-to-agent ready) |
+
 ## Supported Project Types
 
-- **SaaS Applications**: Multi-tenant web apps
-- **API Backends**: REST/GraphQL APIs
-- **Agent Systems**: Single AI agents
-- **Multi-Agent Systems**: Orchestrated agent workflows
+| Type | Description | Example |
+|------|-------------|---------|
+| **SaaS** | Multi-tenant web applications | Veterinary clinic management |
+| **API** | REST/GraphQL API backends | Payment processing API |
+| **Agent** | Single AI agent systems | Customer support chatbot |
+| **Multi-Agent** | Orchestrated agent workflows | Research pipeline |
+| **Platform** | Complex multi-component systems | AI Operations Center, Agent Marketplace |
 
 ## Scale Phases
 
@@ -204,11 +228,67 @@ The Agent Factory provides 6 multi-agent patterns:
 - **Reviewer**: Reviews code for quality, security, patterns
 - **Tester**: Generates tests and validation commands
 
+## Quality & Evaluation System
+
+### Artifact Evaluation
+
+The agent automatically evaluates generated artifacts using rule-based checks:
+
+- **CLAUDE.md**: Required sections, tech stack specifics, code examples, architecture pattern
+- **PRD**: Success criteria, feature prioritization, no placeholders, integration points
+- **Feature Plans**: File references, validation commands, integration points
+
+Each check has a severity level (critical/warning/info) and produces a weighted score (0.0-1.0).
+
+### System Review
+
+Run `/system-review session_id` to get a meta-analysis of your project:
+
+- **Plan Fidelity**: Did the implementation follow the plan?
+- **Artifact Quality**: Are CLAUDE.md and PRD good enough?
+- **Phase Progression**: Are you moving through phases correctly?
+- **Confidence Score**: Weighted 1-10 score for project health
+
+### PRP Format
+
+Enhanced planning format for agent-to-agent communication:
+- Zero ambiguity: every task has specific files and pseudocode
+- Validation at every level: from syntax to integration
+- Context-rich: references to existing code, patterns, gotchas
+
+## Playbook Knowledge Base
+
+The playbook contains ~71 files covering:
+
+### Core Methodology
+- PIV Loop (Plan → Implement → Validate)
+- Discovery questions, tech stack selection
+- CLAUDE.md creation, PRD generation
+- Feature breakdown, plan templates
+- Validation pyramid (5 levels)
+
+### Deployment (18 files)
+- MVP → Growth → Scale → Enterprise configurations
+- Docker, Kubernetes, CI/CD templates
+- Multi-tenancy design
+
+### Advanced Guides (15 files)
+- **Agent Testing & Evals**: Golden datasets, pydantic-evals, LLM Judge, production evals, user feedback
+- **Agent Observability**: Langfuse setup, traces/spans/scores, cost tracking, dashboards
+- **Agent Security**: Fail-closed model, sandbox execution, approval workflows, environment blocking
+- **SaaS Monetization**: Stripe integration, token billing, marketplace commission, pricing strategy
+- **Agent Memory Architecture**: 4+1 file system, vector-first search, heartbeat/cron, context window guard
+- **Marketplace Development**: Digital employees, plugin architecture, multi-channel delivery, quality gates
+- **Context Engineering**: RAG optimization, prompt engineering
+- **Subagents Framework**: Parallel execution with git worktrees
+- **Meta-reasoning**: Scope creep detection, plan adjustment
+
 ## Meta-Learning
 
 The agent learns from completed projects and uses that knowledge to improve recommendations:
 
 - **Pattern Capture**: Automatically extracts successful patterns from completed projects
+- **Auto-Capture**: Lessons captured at each phase transition (discovery, planning, roadmap, deployment)
 - **Tech Stack Suggestions**: Recommends technologies based on past project success rates
 - **Pitfall Detection**: Warns about common issues for specific project types
 - **Similarity Matching**: Finds relevant lessons from similar past projects
@@ -297,14 +377,23 @@ cd ui-agent
 
 ## Future Plans
 
-- [x] Supabase integration for persistent state ✓
-- [x] Project sync across team members ✓
-- [x] Repository linking for projects ✓
+- [x] Supabase integration for persistent state
+- [x] Project sync across team members
+- [x] Repository linking for projects
+- [x] Multi-user support with RLS
+- [x] Agent Factory for creating specialized agents
+- [x] Meta-Learning from completed projects
+- [x] UI Agent integration for frontend generation
+- [x] Artifact evaluation with quality scoring
+- [x] System review (meta-analysis)
+- [x] PRP format for agent-to-agent communication
+- [x] Hybrid search for playbook
+- [x] Auto-capture of lessons per phase
+- [x] Platform project type
+- [x] Advanced guides: evals, observability, security, monetization, memory, marketplace
 - [ ] RAG with pgvector for semantic search
-- [x] Multi-user support with RLS ✓
-- [x] Agent Factory for creating specialized agents ✓
-- [x] Meta-Learning from completed projects ✓
-- [x] UI Agent integration for frontend generation ✓
+- [ ] Langfuse integration for agent observability
+- [ ] n8n workflow integration
 
 ## License
 
