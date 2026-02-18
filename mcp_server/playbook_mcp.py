@@ -606,6 +606,77 @@ async def get_execution_package(session_id: str) -> str:
 
 
 # =============================================================================
+# Handoff — Write Artifacts to Disk
+# =============================================================================
+
+
+@mcp.tool(name="playbook_handoff")
+async def handoff_to_disk(
+    session_id: str,
+    project_path: str,
+    overwrite_claude_md: bool = False,
+    write_prps: bool = True,
+) -> str:
+    """
+    Write all project artifacts to disk for autonomous implementation.
+
+    The Playbook agent is the PM — it plans, designs, and structures.
+    Claude Code is the engineer — it reads the plan from disk and executes.
+
+    This tool bridges the two by writing all artifacts to the project directory:
+    - CLAUDE.md (project rules, architecture, code style)
+    - docs/PRD.md (product requirements)
+    - docs/ROADMAP.md (feature order with dependencies)
+    - .playbook/handoff.md (anti-hallucination execution protocol for Claude Code)
+    - .playbook/session.json (machine-readable session metadata)
+    - .playbook/prps/*.md (one PRP per feature, in dependency order)
+
+    Use this after completing Discovery, Planning, and Roadmap phases.
+    Then open the project in Claude Code and tell it to follow .playbook/handoff.md.
+
+    Args:
+        session_id: The session ID of the project
+        project_path: Absolute path to the target project directory
+        overwrite_claude_md: If True, overwrite existing CLAUDE.md (default: False, to protect customizations)
+        write_prps: If True, write individual PRP files per feature (default: True)
+
+    Returns:
+        Report of all files written, skipped, and failed
+    """
+    if session_id not in sessions:
+        # Try to load from Supabase
+        if SUPABASE_ENABLED and db:
+            remote_data = await db.load_orchestrator_state(session_id)
+            if remote_data:
+                state = await _reconstruct_state_from_supabase(remote_data)
+                if state:
+                    sessions[session_id] = state
+
+    if session_id not in sessions:
+        return f"## Error\n\nSession `{session_id}` not found."
+
+    state = sessions[session_id]
+    project = state.project
+
+    from agent.handoff import HandoffWriter
+
+    writer = HandoffWriter(project, project_path)
+
+    # Validate preconditions
+    error = writer.validate()
+    if error:
+        return f"## Error\n\n{error}"
+
+    # Write all artifacts to disk
+    writer.write_all(
+        overwrite_claude_md=overwrite_claude_md,
+        write_prps=write_prps,
+    )
+
+    return writer.format_report()
+
+
+# =============================================================================
 # Artifact Evaluation Tools
 # =============================================================================
 
