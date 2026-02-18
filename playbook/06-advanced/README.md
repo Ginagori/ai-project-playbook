@@ -94,6 +94,18 @@ Esta sección cubre temas avanzados que NO todos los proyectos necesitan, pero s
 
 ---
 
+### 7. **[autonomous-agent-architecture.md](./autonomous-agent-architecture.md)**
+**Arquitectura completa para agentes autónomos de producción**
+
+- Triple-Layer Soul (Core + Identity + Learned Preferences)
+- 4 Engines (Soul, Memory, Router, Heartbeat)
+- Modelo de seguridad (hash verification, prompt injection defense)
+- Patrón de adaptación por dominio
+
+**Cuándo usar:** Construyes un agente AI que necesita identidad persistente, memoria, routing inteligente y comportamiento proactivo.
+
+---
+
 ## 🎯 Cómo Usar Esta Sección
 
 ### Approach 1: Problem-Driven

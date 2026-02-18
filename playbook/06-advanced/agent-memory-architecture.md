@@ -491,6 +491,8 @@ async def compact_session(session: SessionLog, llm) -> str:
 
 ## Heartbeat Pattern
 
+> For the full agent architecture context (Triple-Layer Soul, 4 Engines, Security Model), see [autonomous-agent-architecture.md](./autonomous-agent-architecture.md).
+
 Inspired by OpenClaw — agents that act proactively without being asked.
 
 ### Schedule Types

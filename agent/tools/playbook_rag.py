@@ -94,6 +94,19 @@ QUERY_CATEGORIES = {
         "priority_files": ["marketplace-agent-development.md"],
         "boost": 1.6,
     },
+    "autonomous_agent": {
+        "keywords": [
+            "autonomous agent", "triple-layer soul", "core soul", "identity soul",
+            "learned preferences", "soul engine", "router engine",
+            "heartbeat engine", "prompt assembly", "agent architecture",
+            "production agent", "zero-access", "core soul integrity",
+            "prompt injection defense", "domain adaptation", "nora", "frank",
+            "4 engines", "layered soul",
+        ],
+        "priority_dirs": ["06-advanced"],
+        "priority_files": ["autonomous-agent-architecture.md"],
+        "boost": 1.7,
+    },
     "security": {
         "keywords": ["security", "sandbox", "fail-closed", "allowlist", "approval", "permission", "auth", "rls", "row level", "env", "secret", "credential"],
         "priority_dirs": ["02-planning", "06-advanced"],
@@ -355,7 +368,7 @@ def search_by_topic(topic: str) -> list[SearchResult]:
         "kubernetes": ["05-deployment/kubernetes/deployment.yaml", "05-deployment/scale-deployment.md"],
         "multi-tenancy": ["05-deployment/multi-tenancy-design.md"],
         "lovable": ["06-advanced/lovable-to-production.md"],
-        "agents": ["06-advanced/subagents-framework.md", "06-advanced/parallel-implementation.md"],
+        "agents": ["06-advanced/subagents-framework.md", "06-advanced/parallel-implementation.md", "06-advanced/autonomous-agent-architecture.md"],
         "security": ["02-planning/security-best-practices.md", "06-advanced/agent-security-execution.md"],
         "architecture": ["04-implementation/architecture-patterns-guide.md", "04-implementation/vertical-slice-guide.md"],
         # New topics for NOVA/OpenClaw content
@@ -366,13 +379,23 @@ def search_by_topic(topic: str) -> list[SearchResult]:
         "billing": ["06-advanced/saas-monetization.md"],
         "monetization": ["06-advanced/saas-monetization.md"],
         "memory": ["06-advanced/agent-memory-architecture.md"],
-        "heartbeat": ["06-advanced/agent-memory-architecture.md"],
+        "heartbeat": ["06-advanced/agent-memory-architecture.md", "06-advanced/autonomous-agent-architecture.md"],
         "marketplace": ["06-advanced/marketplace-agent-development.md"],
         "plugin": ["06-advanced/marketplace-agent-development.md"],
         "multi-channel": ["06-advanced/marketplace-agent-development.md"],
         "sandbox": ["06-advanced/agent-security-execution.md"],
         "system review": ["04-implementation/system-review-guide.md"],
         "prp": ["templates/prp-template.md"],
+        "autonomous agent": ["06-advanced/autonomous-agent-architecture.md"],
+        "soul engine": ["06-advanced/autonomous-agent-architecture.md"],
+        "core soul": ["06-advanced/autonomous-agent-architecture.md"],
+        "identity soul": ["06-advanced/autonomous-agent-architecture.md"],
+        "learned preferences": ["06-advanced/autonomous-agent-architecture.md"],
+        "triple-layer": ["06-advanced/autonomous-agent-architecture.md"],
+        "router engine": ["06-advanced/autonomous-agent-architecture.md"],
+        "domain adaptation": ["06-advanced/autonomous-agent-architecture.md"],
+        "prompt assembly": ["06-advanced/autonomous-agent-architecture.md"],
+        "4 engines": ["06-advanced/autonomous-agent-architecture.md"],
     }
 
     # Find matching topic
