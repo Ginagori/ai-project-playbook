@@ -7,16 +7,16 @@ Discovery → Planning → Roadmap → Implementation → Deployment
 Each phase is a node that processes user input and generates outputs.
 """
 
-from langgraph.graph import StateGraph, END
-from pydantic import BaseModel, Field
+from langgraph.graph import END, StateGraph
+from pydantic import BaseModel
 
 from agent.models.project import (
-    ProjectState,
-    Phase,
     AutonomyMode,
+    Feature,
+    Phase,
+    ProjectState,
     ProjectType,
     ScalePhase,
-    Feature,
 )
 
 
@@ -25,6 +25,7 @@ class OrchestratorState(BaseModel):
     State that flows through the LangGraph orchestrator.
     Extends ProjectState with orchestration-specific fields.
     """
+
     # Core project state
     project: ProjectState
 
@@ -106,6 +107,59 @@ Which do you prefer?""",
     },
 ]
 
+# Follow-up questions per project type (asked after the 5 base questions)
+FOLLOWUP_QUESTIONS: dict[str, list[dict]] = {
+    "saas": [
+        {
+            "id": "domain",
+            "question": """**Follow-up: What domain is this SaaS for?**
+
+Examples: healthcare, education, finance, e-commerce, HR, legal, real estate,
+occupational safety, veterinary, logistics...
+
+This helps me find patterns from similar projects and generate domain-specific requirements.""",
+        },
+    ],
+    "platform": [
+        {
+            "id": "architecture_pattern",
+            "question": """**Follow-up: What architecture pattern?**
+
+1. **Triple-Layer Soul + 4 Engines** — Proven in NOVA, KOMPLIA, KidSpark (recommended for AI platforms)
+2. **Plugin Architecture** — Extensible system with marketplace
+3. **Microservices** — Independent services communicating via API
+
+Based on past projects, option 1 has the highest success rate for AI-powered platforms.""",
+            "options": {"1": "triple-layer-soul", "2": "plugin", "3": "microservices"},
+        },
+    ],
+    "agent": [
+        {
+            "id": "llm_provider",
+            "question": """**Follow-up: Which LLM provider?**
+
+1. **Claude (Anthropic)** — Recommended for complex reasoning
+2. **OpenAI (GPT)** — Widest ecosystem
+3. **Multiple** — Multi-provider with fallback
+4. **Local/Open Source** — Ollama, vLLM""",
+            "options": {"1": "claude", "2": "openai", "3": "multi", "4": "local"},
+        },
+    ],
+    "multi-agent": [
+        {
+            "id": "orchestration",
+            "question": """**Follow-up: Orchestration pattern?**
+
+1. **LangGraph State Machine** — Proven in Playbook, NOVA (recommended)
+2. **Supervisor/Router** — Central coordinator dispatches to agents
+3. **Swarm/Peer-to-peer** — Agents coordinate among themselves
+
+Based on past projects, option 1 provides the best observability and debugging.""",
+            "options": {"1": "langgraph", "2": "supervisor", "3": "swarm"},
+        },
+    ],
+}
+
 
 def create_initial_state(objective: str, mode: str = "supervised") -> OrchestratorState:
     """Create the initial orchestrator state for a new project."""
@@ -125,59 +179,184 @@ def create_initial_state(objective: str, mode: str = "supervised") -> Orchestrat
 # Node Functions
 # =============================================================================
 
+
 def discovery_node(state: OrchestratorState) -> OrchestratorState:
     """
     Handle Discovery phase - ask questions to understand the project.
+
+    Flow: 5 base questions → similar project detection → follow-up questions → planning.
     """
     project = state.project
     question_index = state.discovery_question_index
     user_input = state.user_input
+    base_count = len(DISCOVERY_QUESTIONS)
 
-    # If we have user input, process the answer
+    # --- Process answer from previous question ---
     if user_input and question_index > 0:
-        prev_question = DISCOVERY_QUESTIONS[question_index - 1]
         answer = user_input.strip()
 
-        # Map the answer
-        if prev_question["id"] == "project_type":
-            mapped = prev_question["options"].get(answer, answer)
-            try:
-                project.project_type = ProjectType(mapped)
-            except ValueError:
-                project.project_type = ProjectType.SAAS  # Default
+        if question_index <= base_count:
+            # Processing a base question answer
+            prev_question = DISCOVERY_QUESTIONS[question_index - 1]
 
-        elif prev_question["id"] == "scale":
-            mapped = prev_question["options"].get(answer, "mvp")
-            try:
-                project.scale = ScalePhase(mapped)
-            except ValueError:
-                project.scale = ScalePhase.MVP
+            if prev_question["id"] == "project_type":
+                mapped = prev_question["options"].get(answer, answer)
+                try:
+                    project.project_type = ProjectType(mapped)
+                except ValueError:
+                    project.project_type = ProjectType.SAAS
 
-        elif prev_question["id"] == "frontend":
-            mapped = prev_question["options"].get(answer, "react-vite")
-            project.tech_stack.frontend = mapped
+            elif prev_question["id"] == "scale":
+                mapped = prev_question["options"].get(answer, "mvp")
+                try:
+                    project.scale = ScalePhase(mapped)
+                except ValueError:
+                    project.scale = ScalePhase.MVP
 
-        elif prev_question["id"] == "backend":
-            mapped = prev_question["options"].get(answer, "fastapi")
-            project.tech_stack.backend = mapped
+            elif prev_question["id"] == "frontend":
+                mapped = prev_question["options"].get(answer, "react-vite")
+                project.tech_stack.frontend = mapped
 
-        elif prev_question["id"] == "database":
-            mapped = prev_question["options"].get(answer, "postgresql-supabase")
-            project.tech_stack.database = mapped
+            elif prev_question["id"] == "backend":
+                mapped = prev_question["options"].get(answer, "fastapi")
+                project.tech_stack.backend = mapped
 
-    # Check if discovery is complete
-    if question_index >= len(DISCOVERY_QUESTIONS):
-        # Move to planning phase
-        project.current_phase = Phase.PLANNING
-        project.needs_user_input = False
+            elif prev_question["id"] == "database":
+                mapped = prev_question["options"].get(answer, "postgresql-supabase")
+                project.tech_stack.database = mapped
 
-        # Auto-capture discovery lessons
-        from agent.meta_learning.capture import auto_capture_phase_lesson
-        auto_capture_phase_lesson("discovery", project)
+        else:
+            # Processing a follow-up question answer
+            pt_key = project.project_type.value if project.project_type else "saas"
+            followups = FOLLOWUP_QUESTIONS.get(pt_key, [])
+            followup_idx = question_index - base_count - 1
+            if 0 <= followup_idx < len(followups):
+                fq = followups[followup_idx]
+                if "options" in fq:
+                    answer = fq["options"].get(answer, answer)
+                project.discovery_context[fq["id"]] = answer
 
-        # Generate summary
-        ts = project.tech_stack
-        summary = f"""
+    # --- Determine follow-up questions for this project type ---
+    pt_key = project.project_type.value if project.project_type else None
+    followups = FOLLOWUP_QUESTIONS.get(pt_key, []) if pt_key else []
+
+    # --- Still asking base questions ---
+    if question_index < base_count:
+        current_question = DISCOVERY_QUESTIONS[question_index]
+        project.needs_user_input = True
+        project.pending_question = current_question["question"]
+
+        if question_index == 0:
+            output = f"""
+## Discovery Phase - Understanding Your Project
+
+Based on your objective: **{project.objective}**
+
+I need to understand a few things to recommend the best approach.
+
+{current_question["question"]}
+"""
+        else:
+            output = current_question["question"]
+
+        return OrchestratorState(
+            project=project,
+            agent_output=output,
+            discovery_question_index=question_index + 1,
+            should_continue=True,
+        )
+
+    # --- Base questions done: query similar projects + ask follow-ups ---
+    if question_index == base_count:
+        # Query MemoryBridge for similar project insights (non-blocking)
+        similar_section = ""
+        try:
+            from agent.memory_bridge import MemoryBridge
+
+            bridge = MemoryBridge.get_instance()
+            tech_list = [
+                t
+                for t in [
+                    project.tech_stack.frontend,
+                    project.tech_stack.backend,
+                    project.tech_stack.database,
+                ]
+                if t
+            ]
+            similar = bridge.get_relevant_lessons(
+                project_type=pt_key or "saas",
+                tech_stack=tech_list,
+                phase="discovery",
+                limit=5,
+            )
+            if similar:
+                project.discovery_context["similar_lessons_found"] = len(similar)
+                similar_info = "\n".join(
+                    f"- **{ls.title}**: {ls.recommendation}" for ls in similar[:3]
+                )
+                project.discovery_context["similar_info"] = similar_info
+                similar_section = f"""
+### Insights from Past Projects
+
+I found {len(similar)} relevant lessons from similar projects:
+
+{similar_info}
+
+These will be incorporated into your project artifacts.
+
+---
+
+"""
+        except Exception:
+            pass  # Similar project detection is informational, not blocking
+
+        # If there are follow-up questions, ask the first one
+        if followups:
+            fq = followups[0]
+            project.needs_user_input = True
+            project.pending_question = fq["question"]
+            output = f"{similar_section}{fq['question']}"
+            return OrchestratorState(
+                project=project,
+                agent_output=output,
+                discovery_question_index=question_index + 1,
+                should_continue=True,
+            )
+
+    # --- Ask remaining follow-up questions ---
+    followup_idx = question_index - base_count
+    if followup_idx < len(followups):
+        fq = followups[followup_idx]
+        project.needs_user_input = True
+        project.pending_question = fq["question"]
+        return OrchestratorState(
+            project=project,
+            agent_output=fq["question"],
+            discovery_question_index=question_index + 1,
+            should_continue=True,
+        )
+
+    # --- All questions done → move to planning ---
+    project.current_phase = Phase.PLANNING
+    project.needs_user_input = False
+
+    # Auto-capture discovery lessons
+    from agent.meta_learning.capture import auto_capture_phase_lesson
+
+    auto_capture_phase_lesson("discovery", project)
+
+    # Generate summary
+    ts = project.tech_stack
+    context_lines = ""
+    if project.discovery_context:
+        ctx_items = []
+        for key, val in project.discovery_context.items():
+            if key not in ("similar_info", "similar_lessons_found"):
+                ctx_items.append(f"  - {key.replace('_', ' ').title()}: {val}")
+        if ctx_items:
+            context_lines = "\n- **Discovery Context**:\n" + "\n".join(ctx_items)
+
+    summary = f"""
 ## Discovery Complete!
 
 **Project Summary:**
@@ -187,7 +366,7 @@ def discovery_node(state: OrchestratorState) -> OrchestratorState:
 - **Tech Stack**:
   - Frontend: {ts.frontend or "N/A"}
   - Backend: {ts.backend or "N/A"}
-  - Database: {ts.database or "N/A"}
+  - Database: {ts.database or "N/A"}{context_lines}
 
 ---
 
@@ -199,36 +378,10 @@ I will now generate:
 
 Reply with "continue" to proceed.
 """
-        return OrchestratorState(
-            project=project,
-            agent_output=summary,
-            discovery_question_index=question_index,
-            should_continue=True,
-        )
-
-    # Ask the next question
-    current_question = DISCOVERY_QUESTIONS[question_index]
-    project.needs_user_input = True
-    project.pending_question = current_question["question"]
-
-    # Build output
-    if question_index == 0:
-        output = f"""
-## Discovery Phase - Understanding Your Project
-
-Based on your objective: **{project.objective}**
-
-I need to understand a few things to recommend the best approach.
-
-{current_question["question"]}
-"""
-    else:
-        output = current_question["question"]
-
     return OrchestratorState(
         project=project,
-        agent_output=output,
-        discovery_question_index=question_index + 1,
+        agent_output=summary,
+        discovery_question_index=question_index,
         should_continue=True,
     )
 
@@ -267,6 +420,7 @@ def planning_node(state: OrchestratorState) -> OrchestratorState:
 
     # Auto-capture planning lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
+
     auto_capture_phase_lesson("planning", project)
 
     # Build eval summary
@@ -318,7 +472,7 @@ Reply with "continue" to proceed to Roadmap.
 
 
 def _generate_claude_md(project: ProjectState) -> str:
-    """Generate CLAUDE.md content based on project type."""
+    """Generate CLAUDE.md with project-type patterns + lessons from memory."""
     ts = project.tech_stack
     pt = project.project_type
 
@@ -459,12 +613,49 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
 """
 
     # Determine package manager and test framework
-    is_python = "python" in (ts.backend or "").lower() or "fastapi" in (ts.backend or "").lower() or "django" in (ts.backend or "").lower()
+    is_python = (
+        "python" in (ts.backend or "").lower()
+        or "fastapi" in (ts.backend or "").lower()
+        or "django" in (ts.backend or "").lower()
+    )
     pkg_manager = "uv (Python)" if is_python else "pnpm (Node)"
     test_framework = "pytest" if is_python else "vitest"
 
-    claude_md = f"""# {project.objective}
+    # --- NEW: Domain context from discovery ---
+    domain_section = ""
+    if project.discovery_context:
+        domain = project.discovery_context.get("domain", "")
+        regulations = project.discovery_context.get("regulations", "")
+        if domain:
+            domain_section = f"\n## Domain: {domain.title()}\n"
+        if regulations:
+            domain_section += f"\n### Regulatory Requirements\n- {regulations}\n"
 
+    # --- NEW: Lessons from MemoryBridge ---
+    lessons_section = ""
+    gotchas_section = ""
+    try:
+        from agent.memory_bridge import MemoryBridge
+
+        bridge = MemoryBridge.get_instance()
+        tech_list = [t for t in [ts.frontend, ts.backend, ts.database] if t]
+        pt_value = pt.value if pt else "saas"
+
+        arch_lessons = bridge.get_architecture_lessons(pt_value)
+        gotchas = bridge.get_gotchas(pt_value, tech_list)
+
+        if arch_lessons:
+            lessons_section = "\n## Learned Patterns (from past projects)\n\n"
+            for lesson in arch_lessons[:3]:
+                lessons_section += f"- **{lesson.title}**: {lesson.recommendation}\n"
+
+        if gotchas:
+            gotchas_section = "\n## Known Gotchas\n\n" + "\n".join(gotchas) + "\n"
+    except Exception:
+        pass  # Graceful fallback when MemoryBridge unavailable
+
+    claude_md = f"""# {project.objective}
+{domain_section}
 ## Core Principles
 
 {principles}
@@ -496,7 +687,7 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
 - {"Use pytest markers: @pytest.mark.unit, @pytest.mark.integration" if is_python else "Use vitest describe/it pattern with test.each for parameterized tests"}
 
 ## Common Patterns
-{extra_patterns}"""
+{extra_patterns}{lessons_section}{gotchas_section}"""
 
     return claude_md
 
@@ -551,18 +742,74 @@ def _generate_prd(project: ProjectState) -> str:
 3. Analytics dashboard
 4. Export/import functionality"""
 
+    # --- NEW: Domain context from discovery ---
+    domain = project.discovery_context.get("domain", "") if project.discovery_context else ""
+    target_users = (
+        project.discovery_context.get("target_users", "") if project.discovery_context else ""
+    )
+    regulations = (
+        project.discovery_context.get("regulations", "") if project.discovery_context else ""
+    )
+
+    domain_line = f"\n**Domain**: {domain.title()}" if domain else ""
+
+    users_section = ""
+    if target_users:
+        users_section = f"""
+## Users & Personas
+
+### Primary Users
+{target_users}
+"""
+
+    security_section = """
+## Security Considerations
+
+- Validate all user inputs at API boundary
+- Use atomic database operations for concurrent access
+- Never commit environment variables to git
+- Test error paths, not just happy paths"""
+    if regulations:
+        security_section += f"\n- **Regulatory Compliance**: {regulations}"
+    security_section += "\n"
+
+    # --- NEW: Lessons from MemoryBridge ---
+    gotchas_section = ""
+    lessons_section = ""
+    try:
+        from agent.memory_bridge import MemoryBridge
+
+        bridge = MemoryBridge.get_instance()
+        tech_list = [t for t in [ts.frontend, ts.backend, ts.database] if t]
+        pt_value = pt.value if pt else "saas"
+
+        all_lessons = bridge.get_relevant_lessons(pt_value, tech_list, phase="planning")
+        gotchas = bridge.get_gotchas(pt_value, tech_list)
+
+        if gotchas:
+            gotchas_section = (
+                "\n## Known Gotchas (from past projects)\n\n" + "\n".join(gotchas) + "\n"
+            )
+
+        if all_lessons:
+            lessons_section = "\n## Lessons from Similar Projects\n\n"
+            for lesson in all_lessons[:5]:
+                lessons_section += f"- **{lesson.title}**: {lesson.recommendation}\n"
+    except Exception:
+        pass  # Graceful fallback
+
     prd = f"""# Product Requirements Document
 
 ## Executive Summary
 
 **Product**: {project.objective}
 **Type**: {pt.value if pt else "Application"}
-**Target Scale**: {project.scale.value}
+**Target Scale**: {project.scale.value}{domain_line}
 
 ## Mission
 
 Build a {pt.value if pt else "application"} that {project.objective}.
-
+{users_section}
 ## MVP Scope
 
 ### Core Features (P0)
@@ -579,84 +826,314 @@ Build a {pt.value if pt else "application"} that {project.objective}.
 - [ ] Deployment pipeline working
 - [ ] API documentation complete (OpenAPI)
 
-## Tech Stack
+## Technical Architecture
 
-- Frontend: {ts.frontend or "N/A"}
-- Backend: {ts.backend or "N/A"}
-- Database: {ts.database or "N/A"}
-
-## Known Gotchas
-
-- Ensure environment variables are never committed to git
-- Use atomic database operations for concurrent access
-- Validate all user inputs at API boundary
-- Test error paths, not just happy paths
-"""
+- **Frontend**: {ts.frontend or "N/A"}
+- **Backend**: {ts.backend or "N/A"}
+- **Database**: {ts.database or "N/A"}
+{security_section}{gotchas_section}{lessons_section}"""
 
     return prd
 
 
+def _get_domain_features(discovery_context: dict) -> list[Feature]:
+    """Generate domain-specific features from discovery context."""
+    domain = discovery_context.get("domain", "").lower()
+    regulations = discovery_context.get("regulations", "")
+
+    domain_features: list[Feature] = []
+
+    if any(kw in domain for kw in ["health", "safety", "sst", "sgsst", "occupational"]):
+        domain_features = [
+            Feature(
+                name="Worker Registry",
+                description="Manage worker profiles, health records, and employment data",
+            ),
+            Feature(
+                name="Document Management",
+                description="Upload, version, and manage compliance documents",
+            ),
+            Feature(
+                name="Risk Assessment",
+                description="Risk matrix and hazard identification following GTC-45",
+            ),
+        ]
+        if regulations:
+            domain_features.append(
+                Feature(
+                    name="Compliance Tracking",
+                    description=f"Track compliance with {regulations}",
+                )
+            )
+
+    elif any(kw in domain for kw in ["education", "learning", "tutoring", "school"]):
+        domain_features = [
+            Feature(
+                name="Student Profiles",
+                description="Manage student data, learning preferences, and progress",
+            ),
+            Feature(
+                name="Activity Engine",
+                description="Generate and deliver personalized learning activities",
+            ),
+            Feature(
+                name="Progress Tracking",
+                description="Track learning milestones, scores, and growth over time",
+            ),
+        ]
+
+    elif any(kw in domain for kw in ["ecommerce", "commerce", "shop", "store"]):
+        domain_features = [
+            Feature(
+                name="Product Catalog",
+                description="Product listing, categories, search, and inventory",
+            ),
+            Feature(
+                name="Shopping Cart",
+                description="Cart management with persistent state",
+            ),
+            Feature(
+                name="Checkout & Payments",
+                description="Checkout flow with payment gateway integration",
+            ),
+        ]
+
+    elif any(kw in domain for kw in ["veterinar", "clinic", "medical", "hospital"]):
+        domain_features = [
+            Feature(
+                name="Patient Records",
+                description="Manage patient/animal records, history, and appointments",
+            ),
+            Feature(
+                name="Appointment Scheduling",
+                description="Calendar-based appointment booking and reminders",
+            ),
+        ]
+
+    elif domain:
+        domain_features = [
+            Feature(
+                name=f"{domain.title()} Core Module",
+                description=f"Core functionality for {domain} domain",
+            ),
+        ]
+
+    return domain_features
+
+
+def _get_learned_features(project_type: str) -> list[Feature]:
+    """Get feature suggestions from MemoryBridge based on past projects."""
+    try:
+        from agent.memory_bridge import MemoryBridge
+
+        bridge = MemoryBridge.get_instance()
+        arch_lessons = bridge.get_architecture_lessons(project_type)
+
+        features: list[Feature] = []
+        seen_names: set[str] = set()
+
+        for lesson in arch_lessons[:3]:
+            if lesson.title not in seen_names:
+                features.append(
+                    Feature(
+                        name=lesson.title,
+                        description=f"{lesson.recommendation} (learned from past projects)",
+                    )
+                )
+                seen_names.add(lesson.title)
+
+        return features
+    except Exception:
+        return []
+
+
 def roadmap_node(state: OrchestratorState) -> OrchestratorState:
     """
-    Handle Roadmap phase - break down into features.
+    Handle Roadmap phase — context-aware feature breakdown.
+
+    Merges: base features (per project type) + domain features (from discovery_context)
+    + learned features (from MemoryBridge) + closing features.
     """
     project = state.project
 
-    # Generate feature breakdown based on project type
+    # Step 1: Base features per project type (defaults)
     if project.project_type == ProjectType.SAAS:
-        features = [
-            Feature(name="Project Setup", description="Initialize project with tech stack, create folder structure, configure tooling"),
-            Feature(name="Authentication", description="Implement user signup, login, logout, password reset with JWT"),
-            Feature(name="Multi-Tenancy", description="Implement tenant isolation with Row-Level Security"),
-            Feature(name="Core Data Models", description="Define database schema, create ORM models, implement CRUD operations"),
-            Feature(name="API Endpoints", description="Create REST endpoints for core functionality"),
-            Feature(name="Frontend Setup", description="Initialize frontend, configure routing, create layout components"),
-            Feature(name="Dashboard", description="Create main dashboard with key metrics and navigation"),
+        base_features = [
+            Feature(
+                name="Project Setup",
+                description="Initialize project with tech stack, create folder structure, configure tooling",
+            ),
+            Feature(
+                name="Authentication",
+                description="Implement user signup, login, logout, password reset with JWT",
+            ),
+            Feature(
+                name="Multi-Tenancy",
+                description="Implement tenant isolation with Row-Level Security",
+            ),
+            Feature(
+                name="Core Data Models",
+                description="Define database schema, create ORM models, implement CRUD operations",
+            ),
+        ]
+        closing_features = [
+            Feature(
+                name="API Endpoints",
+                description="Create REST endpoints for core functionality",
+            ),
+            Feature(
+                name="Frontend Setup",
+                description="Initialize frontend, configure routing, create layout components",
+            ),
+            Feature(
+                name="Dashboard",
+                description="Create main dashboard with key metrics and navigation",
+            ),
         ]
     elif project.project_type == ProjectType.AGENT:
-        features = [
-            Feature(name="Project Setup", description="Initialize project with Pydantic AI, configure environment"),
-            Feature(name="Agent Core", description="Create main agent with system prompt and configuration"),
-            Feature(name="Tools", description="Implement agent tools for required functionality"),
-            Feature(name="Memory", description="Add conversation memory and context management"),
-            Feature(name="API Interface", description="Create FastAPI endpoints to interact with agent"),
+        base_features = [
+            Feature(
+                name="Project Setup",
+                description="Initialize project with Pydantic AI, configure environment",
+            ),
+            Feature(
+                name="Agent Core",
+                description="Create main agent with system prompt and configuration",
+            ),
+            Feature(
+                name="Tools",
+                description="Implement agent tools for required functionality",
+            ),
+            Feature(
+                name="Memory",
+                description="Add conversation memory and context management",
+            ),
+        ]
+        closing_features = [
+            Feature(
+                name="API Interface",
+                description="Create FastAPI endpoints to interact with agent",
+            ),
         ]
     elif project.project_type == ProjectType.MULTI_AGENT:
-        features = [
-            Feature(name="Project Setup", description="Initialize project with LangGraph, configure environment"),
-            Feature(name="Agent Registry", description="Create agent registry and factory pattern"),
-            Feature(name="Individual Agents", description="Implement specialized agents for each task"),
-            Feature(name="Orchestrator", description="Create supervisor/router for agent coordination"),
-            Feature(name="Communication", description="Implement inter-agent messaging and state sharing"),
-            Feature(name="API Interface", description="Create FastAPI endpoints to interact with system"),
+        base_features = [
+            Feature(
+                name="Project Setup",
+                description="Initialize project with LangGraph, configure environment",
+            ),
+            Feature(
+                name="Agent Registry",
+                description="Create agent registry and factory pattern",
+            ),
+            Feature(
+                name="Individual Agents",
+                description="Implement specialized agents for each task",
+            ),
+            Feature(
+                name="Orchestrator",
+                description="Create supervisor/router for agent coordination",
+            ),
+        ]
+        closing_features = [
+            Feature(
+                name="Communication",
+                description="Implement inter-agent messaging and state sharing",
+            ),
+            Feature(
+                name="API Interface",
+                description="Create FastAPI endpoints to interact with system",
+            ),
         ]
     elif project.project_type == ProjectType.PLATFORM:
-        features = [
-            Feature(name="Project Setup", description="Initialize project with tech stack, monorepo structure, configure tooling"),
-            Feature(name="Authentication", description="Implement user auth with role-based access (admin, developer, end-user)"),
-            Feature(name="Core Data Models", description="Define database schema for platform entities, tenants, and relationships"),
-            Feature(name="Plugin Architecture", description="Create plugin registry, dynamic tool loading, and SDK for extensions"),
-            Feature(name="Agent Registry", description="Build agent/employee lifecycle management with factory pattern"),
-            Feature(name="Real-time Communication", description="Implement WebSocket for agent events and inter-agent messaging"),
-            Feature(name="Dashboard", description="Create admin dashboard with platform metrics, agent status, and user management"),
-            Feature(name="API Endpoints", description="Create REST + WebSocket endpoints for all platform operations"),
+        base_features = [
+            Feature(
+                name="Project Setup",
+                description="Initialize project with tech stack, monorepo structure, configure tooling",
+            ),
+            Feature(
+                name="Authentication",
+                description="Implement user auth with role-based access (admin, developer, end-user)",
+            ),
+            Feature(
+                name="Core Data Models",
+                description="Define database schema for platform entities, tenants, and relationships",
+            ),
+            Feature(
+                name="Plugin Architecture",
+                description="Create plugin registry, dynamic tool loading, and SDK for extensions",
+            ),
+        ]
+        closing_features = [
+            Feature(
+                name="Agent Registry",
+                description="Build agent/employee lifecycle management with factory pattern",
+            ),
+            Feature(
+                name="Dashboard",
+                description="Create admin dashboard with platform metrics, agent status, and user management",
+            ),
+            Feature(
+                name="API Endpoints",
+                description="Create REST + WebSocket endpoints for all platform operations",
+            ),
         ]
     else:  # API or default
-        features = [
-            Feature(name="Project Setup", description="Initialize project with tech stack, create folder structure"),
-            Feature(name="Core Data Models", description="Define database schema, create ORM models"),
-            Feature(name="API Endpoints", description="Create REST endpoints for core functionality"),
-            Feature(name="Authentication", description="Implement auth middleware and JWT handling"),
-            Feature(name="Testing", description="Add unit and integration tests"),
+        base_features = [
+            Feature(
+                name="Project Setup",
+                description="Initialize project with tech stack, create folder structure",
+            ),
+            Feature(
+                name="Core Data Models",
+                description="Define database schema, create ORM models",
+            ),
+            Feature(
+                name="Authentication",
+                description="Implement auth middleware and JWT handling",
+            ),
         ]
+        closing_features = [
+            Feature(
+                name="API Endpoints",
+                description="Create REST endpoints for core functionality",
+            ),
+            Feature(
+                name="Testing",
+                description="Add unit and integration tests",
+            ),
+        ]
+
+    # Step 2: Domain-specific features from discovery_context
+    domain_features: list[Feature] = []
+    if project.discovery_context:
+        domain_features = _get_domain_features(project.discovery_context)
+
+    # Step 3: Learned features from MemoryBridge
+    pt_value = project.project_type.value if project.project_type else "saas"
+    learned_features = _get_learned_features(pt_value)
+
+    # Step 4: Merge — base + domain + learned + closing, deduplicate by name
+    all_features = base_features + domain_features + learned_features + closing_features
+    seen: set[str] = set()
+    features: list[Feature] = []
+    for f in all_features:
+        if f.name not in seen:
+            features.append(f)
+            seen.add(f.name)
+
+    # Cap at 10 features for MVP
+    if len(features) > 10:
+        features = features[:10]
 
     project.features = features
 
     # Enrich features with PRD context (requirements, criteria, dependencies)
     if project.prd:
         from agent.prp_builder import enrich_features_from_prd
+
         enrich_features_from_prd(
-            project.features, project.prd,
+            project.features,
+            project.prd,
             project_type=project.project_type.value if project.project_type else None,
         )
 
@@ -665,12 +1142,12 @@ def roadmap_node(state: OrchestratorState) -> OrchestratorState:
 
     # Auto-capture roadmap lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
+
     auto_capture_phase_lesson("roadmap", project)
 
-    features_list = "\n".join([
-        f"{i+1}. **{f.name}** - {f.description}"
-        for i, f in enumerate(features)
-    ])
+    features_list = "\n".join(
+        [f"{i + 1}. **{f.name}** - {f.description}" for i, f in enumerate(features)]
+    )
 
     output = f"""
 ## Roadmap Phase Complete!
@@ -708,7 +1185,6 @@ def implementation_node(state: OrchestratorState) -> OrchestratorState:
     - Validation commands
     - Relevant playbook references
     """
-    from agent.tools.playbook_rag import search_keyword
 
     project = state.project
     current_idx = project.current_feature_index
@@ -771,12 +1247,18 @@ Reply with "plan" to see the implementation plan, or "next" when done.
 
     # Generate feature-specific implementation plan (context-aware when PRD/CLAUDE.md available)
     plan = generate_feature_plan(
-        feature.name, feature.description, ts, project.project_type,
-        prd=project.prd, claude_md=project.claude_md, features=project.features,
+        feature.name,
+        feature.description,
+        ts,
+        project.project_type,
+        prd=project.prd,
+        claude_md=project.claude_md,
+        features=project.features,
     )
 
     # Evaluate the generated plan
     from agent.evals import ArtifactEvaluator
+
     evaluator = ArtifactEvaluator()
     plan_eval = evaluator.evaluate_plan(plan)
 
@@ -785,6 +1267,7 @@ Reply with "plan" to see the implementation plan, or "next" when done.
 
     # Search for relevant playbook content (using hybrid search)
     from agent.tools.playbook_rag import search_hybrid
+
     search_results = search_hybrid(feature.name, max_results=3)
     playbook_refs = ""
     if search_results:
@@ -846,7 +1329,10 @@ After implementation, run:
 
 def generate_validation_loop(tech_stack) -> str:
     """Generate validation commands based on tech stack."""
-    is_python = "python" in (tech_stack.backend or "").lower() or "fastapi" in (tech_stack.backend or "").lower()
+    is_python = (
+        "python" in (tech_stack.backend or "").lower()
+        or "fastapi" in (tech_stack.backend or "").lower()
+    )
 
     if is_python:
         return """
@@ -906,8 +1392,9 @@ def generate_feature_plan(
     """
     # Use PRPBuilder when full context is available
     if prd and claude_md:
+        from agent.models.project import Feature as FeatureModel
+        from agent.models.project import ProjectState
         from agent.prp_builder import PRPBuilder
-        from agent.models.project import ProjectState, Feature as FeatureModel
 
         # Build a minimal ProjectState for PRPBuilder
         project = ProjectState(
@@ -923,7 +1410,7 @@ def generate_feature_plan(
 
         # Find the matching feature or create a temporary one
         target_feature = None
-        for f in (features or []):
+        for f in features or []:
             if f.name == name:
                 target_feature = f
                 break
@@ -954,8 +1441,7 @@ def generate_feature_plan(
 4. Configure linting and formatting
 5. Set up pre-commit hooks
 """,
-
-        "Authentication": f"""
+        "Authentication": """
 **Files to create:**
 - `src/auth/router.py` - Auth API endpoints
 - `src/auth/service.py` - Auth business logic
@@ -982,8 +1468,7 @@ CREATE TABLE users (
 );
 ```
 """,
-
-        "Core Data Models": f"""
+        "Core Data Models": """
 **Files to create:**
 - `src/models/` - Database models directory
 - `src/schemas/` - Pydantic/TypeScript schemas
@@ -1009,7 +1494,6 @@ class YourEntity(BaseModel):
     tenant_id: UUID  # For multi-tenancy
 ```
 """,
-
         "Dashboard": f"""
 **Files to create:**
 - `src/{"app" if "next" in (tech_stack.frontend or "").lower() else "pages"}/dashboard/page.tsx`
@@ -1036,8 +1520,7 @@ Dashboard/
     └── BarChart.tsx
 ```
 """,
-
-        "API Endpoints": f"""
+        "API Endpoints": """
 **Files to create:**
 - `src/api/` - API routes directory
 - `src/api/v1/` - Version 1 endpoints
@@ -1127,17 +1610,17 @@ def deployment_node(state: OrchestratorState) -> OrchestratorState:
 
 **1. netlify.toml** (Frontend)
 ```toml
-{configs.get('netlify.toml', '# Not generated')}
+{configs.get("netlify.toml", "# Not generated")}
 ```
 
 **2. Dockerfile** (Backend)
 ```dockerfile
-{configs.get('Dockerfile', '# Not generated')}
+{configs.get("Dockerfile", "# Not generated")}
 ```
 
 **3. .github/workflows/deploy.yml** (CI/CD)
 ```yaml
-{configs.get('deploy.yml', '# Not generated')}
+{configs.get("deploy.yml", "# Not generated")}
 ```
 
 ### Deployment Commands
@@ -1169,18 +1652,18 @@ supabase db push
 
 **1. cloudbuild.yaml** (GCP CI/CD)
 ```yaml
-{configs.get('cloudbuild.yaml', '# Not generated')}
+{configs.get("cloudbuild.yaml", "# Not generated")}
 ```
 
 **2. Dockerfile** (Multi-stage)
 ```dockerfile
-{configs.get('Dockerfile', '# Not generated')}
+{configs.get("Dockerfile", "# Not generated")}
 ```
 
 ### Deployment Commands
 ```bash
 # Deploy to Cloud Run
-gcloud run deploy {project.objective.lower().replace(' ', '-')[:20]} \\
+gcloud run deploy {project.objective.lower().replace(" ", "-")[:20]} \\
   --source . \\
   --region us-central1 \\
   --allow-unauthenticated
@@ -1201,12 +1684,12 @@ gcloud run deploy {project.objective.lower().replace(' ', '-')[:20]} \\
 
 **1. kubernetes/deployment.yaml**
 ```yaml
-{configs.get('deployment.yaml', '# Not generated')}
+{configs.get("deployment.yaml", "# Not generated")}
 ```
 
 **2. kubernetes/service.yaml**
 ```yaml
-{configs.get('service.yaml', '# Not generated')}
+{configs.get("service.yaml", "# Not generated")}
 ```
 
 ### Deployment Commands
@@ -1215,7 +1698,7 @@ gcloud run deploy {project.objective.lower().replace(' ', '-')[:20]} \\
 kubectl apply -f kubernetes/
 
 # Check status
-kubectl get pods -l app={project.objective.lower().replace(' ', '-')[:20]}
+kubectl get pods -l app={project.objective.lower().replace(" ", "-")[:20]}
 ```
 """
 
@@ -1223,6 +1706,7 @@ kubectl get pods -l app={project.objective.lower().replace(' ', '-')[:20]}
 
     # Auto-capture deployment lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
+
     auto_capture_phase_lesson("deployment", project)
 
     output = f"""
@@ -1280,13 +1764,16 @@ playbook_get_status "{project.id}"
 def generate_deployment_configs(scale: ScalePhase, tech_stack, objective: str) -> dict[str, str]:
     """Generate deployment configuration files based on scale."""
 
-    app_name = objective.lower().replace(' ', '-')[:20]
-    is_python = "python" in (tech_stack.backend or "").lower() or "fastapi" in (tech_stack.backend or "").lower()
+    app_name = objective.lower().replace(" ", "-")[:20]
+    is_python = (
+        "python" in (tech_stack.backend or "").lower()
+        or "fastapi" in (tech_stack.backend or "").lower()
+    )
 
     configs = {}
 
     # Netlify config (all scales)
-    configs['netlify.toml'] = f"""[build]
+    configs["netlify.toml"] = f"""[build]
   command = "npm run build"
   publish = "{"out" if "next" in (tech_stack.frontend or "").lower() else "dist"}"
 
@@ -1307,7 +1794,7 @@ def generate_deployment_configs(scale: ScalePhase, tech_stack, objective: str) -
 
     # Dockerfile
     if is_python:
-        configs['Dockerfile'] = f"""FROM python:3.12-slim as builder
+        configs["Dockerfile"] = """FROM python:3.12-slim as builder
 
 WORKDIR /app
 RUN pip install uv
@@ -1328,7 +1815,7 @@ EXPOSE 8080
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
 """
     else:
-        configs['Dockerfile'] = f"""FROM node:20-alpine as builder
+        configs["Dockerfile"] = """FROM node:20-alpine as builder
 
 WORKDIR /app
 COPY package*.json ./
@@ -1351,7 +1838,7 @@ CMD ["node", "dist/index.js"]
 
     # CI/CD based on scale
     if scale == ScalePhase.MVP:
-        configs['deploy.yml'] = f"""name: Deploy
+        configs["deploy.yml"] = """name: Deploy
 
 on:
   push:
@@ -1366,10 +1853,10 @@ jobs:
       - name: Deploy to Railway
         uses: railwayapp/railway-action@v1
         with:
-          railway_token: ${{{{ secrets.RAILWAY_TOKEN }}}}
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
 """
     elif scale == ScalePhase.GROWTH:
-        configs['cloudbuild.yaml'] = f"""steps:
+        configs["cloudbuild.yaml"] = f"""steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/{app_name}:$COMMIT_SHA', '.']
 
@@ -1391,7 +1878,7 @@ images:
   - 'gcr.io/$PROJECT_ID/{app_name}:$COMMIT_SHA'
 """
     else:  # Scale/Enterprise
-        configs['deployment.yaml'] = f"""apiVersion: apps/v1
+        configs["deployment.yaml"] = f"""apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {app_name}
@@ -1432,7 +1919,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
 """
-        configs['service.yaml'] = f"""apiVersion: v1
+        configs["service.yaml"] = f"""apiVersion: v1
 kind: Service
 metadata:
   name: {app_name}
@@ -1461,6 +1948,7 @@ def error_node(state: OrchestratorState) -> OrchestratorState:
 # =============================================================================
 # Router Function
 # =============================================================================
+
 
 def route_by_phase(state: OrchestratorState) -> str:
     """Route to the appropriate node based on current phase."""
@@ -1498,6 +1986,7 @@ def should_continue(state: OrchestratorState) -> str:
 # Build the Graph
 # =============================================================================
 
+
 def build_orchestrator() -> StateGraph:
     """Build and return the LangGraph orchestrator."""
 
@@ -1522,7 +2011,7 @@ def build_orchestrator() -> StateGraph:
             "implementation": "implementation",
             "deployment": "deployment",
             "error": "error",
-        }
+        },
     )
 
     # All phase nodes go to END (we run one step at a time)

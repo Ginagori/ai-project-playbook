@@ -10,14 +10,13 @@ No LLM calls — uses structured text parsing on the PRD and CLAUDE.md
 """
 
 import re
-from typing import Any
 
 from agent.models.project import Feature, ProjectState, TechStack
-
 
 # =============================================================================
 # Markdown Parsing Helpers
 # =============================================================================
+
 
 def _parse_markdown_sections(content: str) -> dict[str, str]:
     """Parse markdown into a dict of {section_title: section_content}."""
@@ -89,6 +88,7 @@ def _fuzzy_match(needle: str, haystack: str) -> bool:
 # Tech Stack Helpers
 # =============================================================================
 
+
 def _is_python_backend(tech_stack: TechStack) -> bool:
     """Detect if backend is Python-based."""
     backend = (tech_stack.backend or "").lower()
@@ -118,7 +118,11 @@ def _get_file_ext(tech_stack: TechStack) -> dict[str, str]:
     is_python = _is_python_backend(tech_stack)
     return {
         "backend": ".py" if is_python else ".ts",
-        "frontend": ".tsx" if _is_react_frontend(tech_stack) else ".vue" if _is_vue_frontend(tech_stack) else ".ts",
+        "frontend": ".tsx"
+        if _is_react_frontend(tech_stack)
+        else ".vue"
+        if _is_vue_frontend(tech_stack)
+        else ".ts",
         "test_backend": ".py" if is_python else ".test.ts",
         "test_frontend": ".test.tsx" if _is_react_frontend(tech_stack) else ".test.ts",
         "config": "pyproject.toml" if is_python else "package.json",
@@ -175,6 +179,7 @@ def _get_feature_layers(feature: Feature) -> list[str]:
 # PRPBuilder
 # =============================================================================
 
+
 class PRPBuilder:
     """
     Builds context-aware PRPs from project state.
@@ -202,6 +207,29 @@ class PRPBuilder:
         self.architecture_pattern = self._extract_architecture_pattern()
         self.code_patterns = self._extract_code_patterns()
 
+        # Cache lessons from MemoryBridge (queried once, used per-feature)
+        self._cached_gotchas: list[str] = []
+        self._cached_arch_lessons: list = []
+        try:
+            from agent.memory_bridge import MemoryBridge
+
+            bridge = MemoryBridge.get_instance()
+            tech_list = [
+                t
+                for t in [
+                    self.tech_stack.frontend,
+                    self.tech_stack.backend,
+                    self.tech_stack.database,
+                ]
+                if t
+            ]
+            pt_value = project.project_type.value if project.project_type else "saas"
+
+            self._cached_gotchas = bridge.get_gotchas(pt_value, tech_list)
+            self._cached_arch_lessons = bridge.get_architecture_lessons(pt_value)
+        except Exception:
+            pass  # Backward compatible — no lessons available
+
     # -------------------------------------------------------------------------
     # PRD Parsing
     # -------------------------------------------------------------------------
@@ -212,7 +240,10 @@ class PRPBuilder:
 
         # Look for MVP Scope / Core Features sections
         for key, content in self.prd_sections.items():
-            if any(kw in key for kw in ["core features", "mvp scope", "features", "p0", "nice-to-have", "p1"]):
+            if any(
+                kw in key
+                for kw in ["core features", "mvp scope", "features", "p0", "nice-to-have", "p1"]
+            ):
                 items = _extract_numbered_items(content) or _extract_bullet_points(content)
                 for item in items:
                     # Use the first few words as the feature key
@@ -266,7 +297,9 @@ class PRPBuilder:
 
         relevant = []
         for criterion in self.prd_success_criteria:
-            if _fuzzy_match(feature.name, criterion) or _fuzzy_match(feature.description, criterion):
+            if _fuzzy_match(feature.name, criterion) or _fuzzy_match(
+                feature.description, criterion
+            ):
                 relevant.append(criterion)
 
         if not relevant:
@@ -274,7 +307,7 @@ class PRPBuilder:
             relevant = [
                 f"{feature.name} is fully functional with no TODOs",
                 f"Unit tests pass for {feature.name}",
-                f"Integration with dependent features verified",
+                "Integration with dependent features verified",
             ]
 
         return relevant
@@ -340,10 +373,27 @@ class PRPBuilder:
         paths: dict[str, list[str]] = {"create": [], "modify": []}
 
         # Backend files
-        backend_layers = {"models", "schemas", "services", "routes", "middleware",
-                          "repositories", "migrations", "agents", "tools", "memory",
-                          "plugins", "registry", "orchestrator", "state", "messaging",
-                          "events", "handlers", "websocket", "vectorstore"}
+        backend_layers = {
+            "models",
+            "schemas",
+            "services",
+            "routes",
+            "middleware",
+            "repositories",
+            "migrations",
+            "agents",
+            "tools",
+            "memory",
+            "plugins",
+            "registry",
+            "orchestrator",
+            "state",
+            "messaging",
+            "events",
+            "handlers",
+            "websocket",
+            "vectorstore",
+        }
 
         for layer in layers:
             if layer in backend_layers:
@@ -371,7 +421,9 @@ class PRPBuilder:
             paths["create"].append(f"tests/{slug}/test_{slug}{ext['test_backend']}")
             if any(layer in layers for layer in frontend_layers):
                 component_name = feature.name.replace(" ", "")
-                paths["create"].append(f"src/components/{slug}/{component_name}{ext['test_frontend']}")
+                paths["create"].append(
+                    f"src/components/{slug}/{component_name}{ext['test_frontend']}"
+                )
 
         # Config files
         if "config" in layers:
@@ -760,10 +812,7 @@ npm run build
                 points.append(f"- **Depends on:** {dep}")
 
         # What depends on this feature
-        dependents = [
-            f.name for f in self.project.features
-            if feature.name in f.depends_on
-        ]
+        dependents = [f.name for f in self.project.features if feature.name in f.depends_on]
         if dependents:
             points.append(f"- **Required by:** {', '.join(dependents)}")
 
@@ -792,8 +841,81 @@ npm run build
     # Build PRP for a Single Feature
     # -------------------------------------------------------------------------
 
+    def _build_codebase_context(self, feature: Feature) -> str:
+        """Build Codebase Context subsection from CLAUDE.md + discovery_context."""
+        lines = []
+
+        if self.architecture_pattern:
+            # Truncate to first 200 chars to keep concise
+            arch_summary = self.architecture_pattern[:200].replace("\n", " ").strip()
+            lines.append(f"- **Architecture:** {arch_summary}")
+
+        if hasattr(self.project, "discovery_context") and self.project.discovery_context:
+            domain = self.project.discovery_context.get("domain", "")
+            if domain:
+                lines.append(f"- **Domain:** {domain}")
+            regulations = self.project.discovery_context.get("regulations", "")
+            if regulations:
+                lines.append(f"- **Regulatory:** {regulations}")
+
+        if self._cached_arch_lessons:
+            for lesson in self._cached_arch_lessons[:2]:
+                lines.append(f"- **Learned:** {lesson.title} — {lesson.recommendation}")
+
+        if not lines:
+            lines.append("- Follow patterns defined in CLAUDE.md")
+
+        return "\n".join(lines)
+
+    def _build_gotchas_section(self, feature: Feature) -> str:
+        """Build Known Gotchas from MemoryBridge + defaults."""
+        gotchas = []
+
+        # Project-specific gotchas from MemoryBridge
+        if self._cached_gotchas:
+            gotchas.extend(self._cached_gotchas[:3])
+
+        # Baseline gotchas (always included)
+        defaults = [
+            "- Do NOT leave TODOs or placeholder code",
+            "- Do NOT skip error handling at API boundaries",
+            "- Do NOT hardcode configuration values (use environment variables)",
+        ]
+        gotchas.extend(d for d in defaults if d not in gotchas)
+
+        return "\n".join(gotchas[:6])
+
+    def _build_data_models_section(self, feature: Feature) -> str:
+        """Build Data Models subsection for Implementation Blueprint."""
+        class_name = feature.name.replace(" ", "").replace("-", "")
+
+        if self.is_python:
+            return f"""```python
+class {class_name}(BaseModel):
+    \"\"\"Data model for {feature.name}.\"\"\"
+    id: UUID
+    # Add fields based on PRD requirements
+    created_at: datetime
+    updated_at: datetime
+```"""
+        else:
+            return f"""```typescript
+interface {class_name} {{
+  id: string;
+  // Add fields based on PRD requirements
+  createdAt: Date;
+  updatedAt: Date;
+}}
+```"""
+
     def build_feature_prp(self, feature: Feature) -> str:
-        """Build a complete PRP for a single feature."""
+        """Build a complete PRP following the official template structure.
+
+        Section order: Goal > Why > What > Success Criteria > Context
+        (Must-Read Files, Codebase Context, Known Gotchas, Relevant Patterns)
+        > Implementation Blueprint (Data Models, Tasks, Integration Points)
+        > Validation Loop > Final Validation Checklist > Anti-Patterns.
+        """
         requirements = self._find_requirements_for_feature(feature)
         criteria = self._find_success_criteria_for_feature(feature)
         file_paths = self._compute_file_paths(feature)
@@ -802,20 +924,28 @@ npm run build
         integration = self._determine_integration_points(feature)
         patterns = self._find_relevant_patterns(feature)
 
-        # Build dependency info
+        # New template-compliant sections
+        codebase_context = self._build_codebase_context(feature)
+        gotchas = self._build_gotchas_section(feature)
+        data_models = self._build_data_models_section(feature)
+
+        # Build helpers
         depends_str = ""
         if feature.depends_on:
             depends_str = f"\n**Depends on:** {', '.join(feature.depends_on)}\n"
 
-        # Build file lists
-        files_create = "\n".join(f"- `{f}`" for f in file_paths["create"]) or "- (determined during implementation)"
-        files_modify = "\n".join(f"- `{f}`" for f in file_paths["modify"]) if file_paths["modify"] else ""
-
-        # Build requirements list
+        files_create = (
+            "\n".join(f"- `{f}`" for f in file_paths["create"])
+            or "- (determined during implementation)"
+        )
+        files_modify = (
+            "\n".join(f"- `{f}`" for f in file_paths["modify"]) if file_paths["modify"] else ""
+        )
         reqs_list = "\n".join(f"- {r}" for r in requirements)
-
-        # Build success criteria
         criteria_list = "\n".join(f"- [ ] {c}" for c in criteria)
+        task_files = (
+            ", ".join(f"`{f}`" for f in file_paths["create"][:3]) or "(see Files to Create)"
+        )
 
         prp = f"""# PRP: {feature.name}
 
@@ -825,7 +955,7 @@ npm run build
 ## Why
 Required for the project: {self.project.objective}. Priority: **{feature.priority.upper()}**.
 
-## What (Requirements from PRD)
+## What
 {reqs_list}
 
 ## Success Criteria
@@ -838,17 +968,26 @@ Required for the project: {self.project.objective}. Priority: **{feature.priorit
 - `CLAUDE.md` — Project rules, architecture pattern, code style
 - `docs/PRD.md` — Full product requirements
 
-### Relevant Patterns from CLAUDE.md
-{patterns}
+### Codebase Context
+{codebase_context}
 
 ### Known Gotchas
-- Do NOT leave TODOs or placeholder code
-- Do NOT skip error handling at API boundaries
-- Do NOT hardcode configuration values (use environment variables)
-- Do NOT commit secrets or .env files
-- Validate all user inputs at API boundary
+{gotchas}
+
+### Relevant Patterns
+{patterns}
 
 ## Implementation Blueprint
+
+### Data Models
+{data_models}
+
+### Tasks
+
+#### Task 1: Implement {feature.name}
+**Files:** {task_files}
+**Pseudocode:**
+{pseudocode}
 
 ### Files to Create
 {files_create}
@@ -856,13 +995,17 @@ Required for the project: {self.project.objective}. Priority: **{feature.priorit
 ### Files to Modify
 {files_modify if files_modify else "- (none for this feature)"}
 
-### Pseudocode
-{pseudocode}
-
 ### Integration Points
 {integration}
 
 {validation}
+
+## Final Validation Checklist
+- [ ] All tasks completed (no TODOs in code)
+- [ ] All validation levels pass (syntax, types, unit, integration, build)
+- [ ] Integration points tested with dependent features
+- [ ] Error paths covered (not just happy path)
+- [ ] {feature.name} is fully functional end-to-end
 
 ## Anti-Patterns
 - Do NOT leave placeholder code or TODOs
@@ -893,7 +1036,9 @@ Required for the project: {self.project.objective}. Priority: **{feature.priorit
         for i, feature in enumerate(ordered_features, 1):
             prp = self.build_feature_prp(feature)
             checkpoint = self._build_checkpoint(i, feature, len(ordered_features))
-            feature_prps.append(f"---\n\n## Feature {i} of {len(ordered_features)}: {feature.name}\n\n{prp}\n\n{checkpoint}")
+            feature_prps.append(
+                f"---\n\n## Feature {i} of {len(ordered_features)}: {feature.name}\n\n{prp}\n\n{checkpoint}"
+            )
 
         features_section = "\n\n".join(feature_prps)
 
@@ -980,8 +1125,17 @@ Read this ENTIRE document before starting implementation.
         """Build a text representation of the dependency graph."""
         lines = []
         for feature in self.project.features:
-            deps = f" (depends on: {', '.join(feature.depends_on)})" if feature.depends_on else " (no dependencies)"
-            status_icon = {"pending": "⬜", "in_progress": "🔄", "completed": "✅", "blocked": "🚫"}.get(feature.status, "⬜")
+            deps = (
+                f" (depends on: {', '.join(feature.depends_on)})"
+                if feature.depends_on
+                else " (no dependencies)"
+            )
+            status_icon = {
+                "pending": "⬜",
+                "in_progress": "🔄",
+                "completed": "✅",
+                "blocked": "🚫",
+            }.get(feature.status, "⬜")
             lines.append(f"{status_icon} **{feature.name}**{deps}")
         return "\n".join(lines)
 
@@ -1072,6 +1226,7 @@ npm audit
 # =============================================================================
 # Feature Enrichment (used by roadmap_node)
 # =============================================================================
+
 
 def enrich_features_from_prd(
     features: list[Feature],

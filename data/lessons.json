@@ -1118,23 +1118,23 @@
       "description": "Selected nextjs + fastapi + postgresql-supabase for platform project: Test auto-capture",
       "context": "Discovery phase for platform",
       "recommendation": "Consider nextjs + fastapi + postgresql-supabase for similar platform projects",
-      "confidence": 0.6,
-      "frequency": 1,
+      "confidence": 0.65,
+      "frequency": 2,
       "project_types": [
         "platform"
       ],
       "tech_stacks": [
-        "nextjs",
         "fastapi",
-        "postgresql-supabase"
+        "postgresql-supabase",
+        "nextjs"
       ],
       "tags": [
-        "tech-stack",
         "discovery",
-        "auto-captured"
+        "auto-captured",
+        "tech-stack"
       ],
       "created_at": "2026-02-12T23:19:32.668210",
-      "updated_at": "2026-02-12T23:19:32.668210"
+      "updated_at": "2026-02-19T22:45:15.089488"
     },
     {
       "id": "f8002834-88fa-4267-baa0-45096a85c9ab",
@@ -1143,15 +1143,15 @@
       "description": "Selected react-vite + fastapi + postgresql-supabase for saas project: CUMPLE SST - Plataforma SaaS de gesti\u00f3n de Seguridad y Salud en el Trabajo para ",
       "context": "Discovery phase for saas",
       "recommendation": "Consider react-vite + fastapi + postgresql-supabase for similar saas projects",
-      "confidence": 0.7000000000000001,
-      "frequency": 3,
+      "confidence": 0.8000000000000002,
+      "frequency": 5,
       "project_types": [
         "saas"
       ],
       "tech_stacks": [
-        "postgresql-supabase",
         "fastapi",
-        "react-vite"
+        "react-vite",
+        "postgresql-supabase"
       ],
       "tags": [
         "discovery",
@@ -1159,7 +1159,7 @@
         "tech-stack"
       ],
       "created_at": "2026-02-13T04:26:48.419688",
-      "updated_at": "2026-02-18T20:10:09.775376"
+      "updated_at": "2026-02-19T23:17:41.545436"
     },
     {
       "id": "7875db1c-2068-4000-8fff-1615f4af3e39",
@@ -1168,19 +1168,19 @@
       "description": "Used Vertical Slice Architecture for saas project",
       "context": "Planning phase \u2014 architecture decision",
       "recommendation": "Vertical Slice Architecture works well for saas projects",
-      "confidence": 0.7500000000000001,
-      "frequency": 3,
+      "confidence": 0.8000000000000002,
+      "frequency": 4,
       "project_types": [
         "saas"
       ],
       "tech_stacks": [],
       "tags": [
-        "planning",
         "auto-captured",
+        "planning",
         "architecture"
       ],
       "created_at": "2026-02-13T04:27:03.894712",
-      "updated_at": "2026-02-18T20:10:13.209079"
+      "updated_at": "2026-02-19T23:17:41.553783"
     },
     {
       "id": "0a248160-9d64-46e7-b238-9af010ad9a2c",
@@ -1189,17 +1189,17 @@
       "description": "CLAUDE.md (97%) and PRD (100%) scored well",
       "context": "Planning phase quality",
       "recommendation": "Maintain detailed CLAUDE.md and PRD for better outcomes",
-      "confidence": 0.8,
-      "frequency": 3,
+      "confidence": 0.8500000000000001,
+      "frequency": 4,
       "project_types": [],
       "tech_stacks": [],
       "tags": [
-        "quality",
         "auto-captured",
+        "quality",
         "workflow"
       ],
       "created_at": "2026-02-13T04:27:03.894712",
-      "updated_at": "2026-02-18T20:10:13.212106"
+      "updated_at": "2026-02-19T23:17:41.558949"
     },
     {
       "id": "de315470-2398-4bf6-929e-3c254d0ace06",
@@ -1221,6 +1221,48 @@
       ],
       "created_at": "2026-02-13T04:27:20.407902",
       "updated_at": "2026-02-18T20:10:19.957536"
+    },
+    {
+      "id": "cc3064d9-d2d9-45a9-8c17-6b9892f946aa",
+      "category": "workflow",
+      "title": "Roadmap: 10 features for saas",
+      "description": "Broke down saas into 10 features: Project Setup, Authentication, Multi-Tenancy, Core Data Models, Worker Registry",
+      "context": "Roadmap phase for saas",
+      "recommendation": "A saas project typically needs 10 core features",
+      "confidence": 0.6000000000000001,
+      "frequency": 2,
+      "project_types": [
+        "saas"
+      ],
+      "tech_stacks": [],
+      "tags": [
+        "roadmap",
+        "auto-captured",
+        "features"
+      ],
+      "created_at": "2026-02-19T23:12:32.146991",
+      "updated_at": "2026-02-19T23:17:41.563667"
+    },
+    {
+      "id": "6955c726-0a2d-4cef-960d-732ab19964e6",
+      "category": "workflow",
+      "title": "Roadmap: 5 features for api",
+      "description": "Broke down api into 5 features: Project Setup, Core Data Models, Authentication, API Endpoints, Testing",
+      "context": "Roadmap phase for api",
+      "recommendation": "A api project typically needs 5 core features",
+      "confidence": 0.55,
+      "frequency": 1,
+      "project_types": [
+        "api"
+      ],
+      "tech_stacks": [],
+      "tags": [
+        "roadmap",
+        "features",
+        "auto-captured"
+      ],
+      "created_at": "2026-02-19T23:12:32.151272",
+      "updated_at": "2026-02-19T23:12:32.151272"
     }
   ],
   "outcomes": []

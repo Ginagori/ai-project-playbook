@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class ProjectType(str, Enum):
     """Type of project being built."""
+
     SAAS = "saas"
     API = "api"
     AGENT = "agent"
@@ -17,6 +18,7 @@ class ProjectType(str, Enum):
 
 class ScalePhase(str, Enum):
     """Scale phase of the project."""
+
     MVP = "mvp"
     GROWTH = "growth"
     SCALE = "scale"
@@ -25,13 +27,15 @@ class ScalePhase(str, Enum):
 
 class AutonomyMode(str, Enum):
     """Agent autonomy mode."""
+
     SUPERVISED = "supervised"  # Ask before actions
     AUTONOMOUS = "autonomous"  # Execute without asking
-    PLAN_ONLY = "plan_only"    # Only generate plans
+    PLAN_ONLY = "plan_only"  # Only generate plans
 
 
 class Phase(str, Enum):
     """Current phase of the project."""
+
     DISCOVERY = "discovery"
     PLANNING = "planning"
     ROADMAP = "roadmap"
@@ -42,6 +46,7 @@ class Phase(str, Enum):
 
 class Feature(BaseModel):
     """A feature to be implemented."""
+
     name: str
     description: str
     status: str = "pending"  # pending, in_progress, completed, blocked
@@ -57,6 +62,7 @@ class Feature(BaseModel):
 
 class TechStack(BaseModel):
     """Technology stack for the project."""
+
     frontend: str | None = None
     backend: str | None = None
     database: str | None = None
@@ -67,6 +73,7 @@ class TechStack(BaseModel):
 
 class ProjectConfig(BaseModel):
     """Configuration for a project."""
+
     objective: str
     project_type: ProjectType | None = None
     scale: ScalePhase = ScalePhase.MVP
@@ -81,6 +88,7 @@ class ProjectState(BaseModel):
 
     This is the main state object that flows through the LangGraph orchestrator.
     """
+
     # Core info
     id: str
     objective: str
@@ -111,6 +119,11 @@ class ProjectState(BaseModel):
     needs_user_input: bool = False
     pending_question: str | None = None
     user_answers: dict[str, str] = Field(default_factory=dict)
+
+    # Discovery enrichment (from Smart Discovery)
+    # Keys: "domain", "regulations", "target_users", "similar_projects",
+    #        "architecture_pattern", "llm_provider", "orchestration"
+    discovery_context: dict[str, Any] = Field(default_factory=dict)
 
     # Metadata
     team: str | None = None
