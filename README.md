@@ -103,7 +103,6 @@ In Claude Code, you can now use these tools:
 
 ```
 ai-project-playbook/
-├── SKILL.md                # Anthropic Skill definition
 ├── playbook/               # Complete methodology (~71 files, ~39K lines)
 │   ├── 00-overview/        # Philosophy, quick start
 │   ├── 01-discovery/       # Discovery questions, tech stack selector
@@ -138,7 +137,8 @@ ai-project-playbook/
 │   └── system-review.md    # /system-review command
 ├── scripts/                # Utilities + hooks
 │   ├── index_playbook.py   # RAG indexer
-│   └── pre-commit-core-soul.sh  # Core Soul pre-commit hook
+│   ├── pre-commit-core-soul.sh   # Core Soul pre-commit hook (bash)
+│   └── pre-commit-core-soul.ps1  # Core Soul pre-commit hook (PowerShell)
 ├── docs/                   # Documentation
 │   ├── ARCHIE.md           # Archie agent documentation
 │   └── ONBOARDING.md       # Team setup guide
