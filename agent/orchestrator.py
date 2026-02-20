@@ -5,7 +5,11 @@ LangGraph-based state machine that orchestrates the project lifecycle:
 Discovery → Planning → Roadmap → Implementation → Deployment
 
 Each phase is a node that processes user input and generates outputs.
+Uses the 4-Engine architecture (Soul, Memory, Router, Heartbeat) for
+context assembly, knowledge retrieval, and output validation.
 """
+
+from __future__ import annotations
 
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel
@@ -18,6 +22,30 @@ from agent.models.project import (
     ProjectType,
     ScalePhase,
 )
+
+# Engine singleton — initialized by MCP server at startup.
+# Orchestrator nodes access engines through this module-level reference.
+_engine_coordinator: object | None = None
+
+
+def set_engine_coordinator(coordinator: object) -> None:
+    """Set the engine coordinator (called by MCP server at startup)."""
+    global _engine_coordinator
+    _engine_coordinator = coordinator
+
+
+def _get_memory_engine():  # type: ignore[no-untyped-def]
+    """Get the Memory Engine (returns None if engines not initialized)."""
+    if _engine_coordinator and hasattr(_engine_coordinator, "memory"):
+        return _engine_coordinator.memory  # type: ignore[union-attr]
+    return None
+
+
+def _get_soul_engine():  # type: ignore[no-untyped-def]
+    """Get the Soul Engine (returns None if engines not initialized)."""
+    if _engine_coordinator and hasattr(_engine_coordinator, "soul"):
+        return _engine_coordinator.soul  # type: ignore[union-attr]
+    return None
 
 
 class OrchestratorState(BaseModel):
@@ -268,12 +296,10 @@ I need to understand a few things to recommend the best approach.
 
     # --- Base questions done: query similar projects + ask follow-ups ---
     if question_index == base_count:
-        # Query MemoryBridge for similar project insights (non-blocking)
+        # Query Memory Engine for similar project insights (non-blocking)
         similar_section = ""
         try:
-            from agent.memory_bridge import MemoryBridge
-
-            bridge = MemoryBridge.get_instance()
+            memory = _get_memory_engine()
             tech_list = [
                 t
                 for t in [
@@ -283,12 +309,24 @@ I need to understand a few things to recommend the best approach.
                 ]
                 if t
             ]
-            similar = bridge.get_relevant_lessons(
-                project_type=pt_key or "saas",
-                tech_stack=tech_list,
-                phase="discovery",
-                limit=5,
-            )
+            if memory:
+                similar = memory.get_lessons(
+                    project_type=pt_key or "saas",
+                    tech_stack=tech_list,
+                    phase="discovery",
+                    limit=5,
+                )
+            else:
+                # Fallback to direct MemoryBridge if engines not initialized
+                from agent.memory_bridge import MemoryBridge
+
+                bridge = MemoryBridge.get_instance()
+                similar = bridge.get_relevant_lessons(
+                    project_type=pt_key or "saas",
+                    tech_stack=tech_list,
+                    phase="discovery",
+                    limit=5,
+                )
             if similar:
                 project.discovery_context["similar_lessons_found"] = len(similar)
                 similar_info = "\n".join(
@@ -631,18 +669,23 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
         if regulations:
             domain_section += f"\n### Regulatory Requirements\n- {regulations}\n"
 
-    # --- NEW: Lessons from MemoryBridge ---
+    # --- Lessons from Memory Engine ---
     lessons_section = ""
     gotchas_section = ""
     try:
-        from agent.memory_bridge import MemoryBridge
-
-        bridge = MemoryBridge.get_instance()
+        memory = _get_memory_engine()
         tech_list = [t for t in [ts.frontend, ts.backend, ts.database] if t]
         pt_value = pt.value if pt else "saas"
 
-        arch_lessons = bridge.get_architecture_lessons(pt_value)
-        gotchas = bridge.get_gotchas(pt_value, tech_list)
+        if memory:
+            arch_lessons = memory.get_architecture_lessons(pt_value)
+            gotchas = memory.get_gotchas(pt_value, tech_list)
+        else:
+            from agent.memory_bridge import MemoryBridge
+
+            bridge = MemoryBridge.get_instance()
+            arch_lessons = bridge.get_architecture_lessons(pt_value)
+            gotchas = bridge.get_gotchas(pt_value, tech_list)
 
         if arch_lessons:
             lessons_section = "\n## Learned Patterns (from past projects)\n\n"
@@ -652,7 +695,7 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
         if gotchas:
             gotchas_section = "\n## Known Gotchas\n\n" + "\n".join(gotchas) + "\n"
     except Exception:
-        pass  # Graceful fallback when MemoryBridge unavailable
+        pass  # Graceful fallback when engines unavailable
 
     claude_md = f"""# {project.objective}
 {domain_section}
@@ -773,18 +816,23 @@ def _generate_prd(project: ProjectState) -> str:
         security_section += f"\n- **Regulatory Compliance**: {regulations}"
     security_section += "\n"
 
-    # --- NEW: Lessons from MemoryBridge ---
+    # --- Lessons from Memory Engine ---
     gotchas_section = ""
     lessons_section = ""
     try:
-        from agent.memory_bridge import MemoryBridge
-
-        bridge = MemoryBridge.get_instance()
+        memory = _get_memory_engine()
         tech_list = [t for t in [ts.frontend, ts.backend, ts.database] if t]
         pt_value = pt.value if pt else "saas"
 
-        all_lessons = bridge.get_relevant_lessons(pt_value, tech_list, phase="planning")
-        gotchas = bridge.get_gotchas(pt_value, tech_list)
+        if memory:
+            all_lessons = memory.get_lessons(pt_value, tech_list, phase="planning")
+            gotchas = memory.get_gotchas(pt_value, tech_list)
+        else:
+            from agent.memory_bridge import MemoryBridge
+
+            bridge = MemoryBridge.get_instance()
+            all_lessons = bridge.get_relevant_lessons(pt_value, tech_list, phase="planning")
+            gotchas = bridge.get_gotchas(pt_value, tech_list)
 
         if gotchas:
             gotchas_section = (
@@ -922,12 +970,16 @@ def _get_domain_features(discovery_context: dict) -> list[Feature]:
 
 
 def _get_learned_features(project_type: str) -> list[Feature]:
-    """Get feature suggestions from MemoryBridge based on past projects."""
+    """Get feature suggestions from Memory Engine based on past projects."""
     try:
-        from agent.memory_bridge import MemoryBridge
+        memory = _get_memory_engine()
+        if memory:
+            arch_lessons = memory.get_architecture_lessons(project_type)
+        else:
+            from agent.memory_bridge import MemoryBridge
 
-        bridge = MemoryBridge.get_instance()
-        arch_lessons = bridge.get_architecture_lessons(project_type)
+            bridge = MemoryBridge.get_instance()
+            arch_lessons = bridge.get_architecture_lessons(project_type)
 
         features: list[Feature] = []
         seen_names: set[str] = set()

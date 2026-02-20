@@ -116,11 +116,26 @@ pip install -r requirements.txt
 }
 ```
 
-### Paso 4: Reiniciar Claude Code
+### Paso 4: Instalar el skill `/archie` (global)
+
+Archie es el agente PM de Nivanta AI. Para invocarlo desde CUALQUIER proyecto:
+
+```powershell
+# Crear directorio global de commands
+mkdir "$env:USERPROFILE\.claude\commands" -Force
+
+# Copiar el skill desde el repo del Playbook
+copy "C:\Users\natal\Proyectos\ai-project-playbook\.claude\commands\archie.md" "$env:USERPROFILE\.claude\commands\archie.md"
+```
+
+> **NOTA:** Cuando se actualice `archie.md` en el repo, hay que volver a copiar.
+> Ver documentacion completa del agente: `docs/ARCHIE.md`
+
+### Paso 5: Reiniciar Claude Code
 
 Cierra y vuelve a abrir VSCode o la terminal de Claude Code.
 
-### Paso 5: Verificar instalación
+### Paso 6: Verificar instalación
 
 En Claude Code, escribe:
 
@@ -138,7 +153,28 @@ Deberías ver:
 
 ---
 
-## Uso Básico
+## Uso de Archie (recomendado)
+
+La forma principal de interactuar con el Playbook es a traves de Archie:
+
+```
+/archie quiero construir un SaaS de gestion de inventarios
+```
+
+Archie inicia Discovery, cruza con proyectos anteriores, sugiere patterns, y te guia hasta el deployment.
+
+Otros usos:
+```
+/archie estado de KOMPLIA          # consultar proyecto existente
+/archie que aprendimos sobre RLS?  # buscar conocimiento acumulado
+/archie                            # saludo + resumen de proyectos
+```
+
+> Ver documentacion completa: `docs/ARCHIE.md`
+
+---
+
+## Uso Basico (MCP tools directos)
 
 ### Iniciar un nuevo proyecto
 

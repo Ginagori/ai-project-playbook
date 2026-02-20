@@ -40,6 +40,8 @@ from agent.meta_learning import (
     PatternCategory,
 )
 from agent.supabase_client import configure_supabase, get_supabase_client
+from agent.engines import EngineCoordinator
+from agent.orchestrator import set_engine_coordinator
 
 # Load environment variables
 load_dotenv()
@@ -65,6 +67,69 @@ else:
 # In-memory session storage (fallback when Supabase not configured)
 # Stores OrchestratorState objects
 sessions: dict[str, OrchestratorState] = {}
+
+# --- Archie's 4-Engine Architecture ---
+# Initialize engines at module load (Core Soul verification happens here)
+coordinator = EngineCoordinator()
+_engines_initialized = False
+
+
+def _initialize_engines_sync() -> None:
+    """Initialize all 4 engines synchronously. Handles event loop detection."""
+    global _engines_initialized
+    if _engines_initialized:
+        return
+
+    import asyncio
+
+    async def _init() -> None:
+        await coordinator.initialize(
+            supabase_client=db,
+            sessions_store=sessions,
+        )
+
+    try:
+        # Check if an event loop is already running (e.g., imported from async context)
+        try:
+            loop = asyncio.get_running_loop()
+            # Loop is running — schedule initialization and return.
+            # The engines will be initialized when the event loop processes this task.
+            loop.create_task(_init())
+            # For now, do sync-only initialization (Core Soul verification)
+            from agent.core_soul import verify_core_soul
+            if not verify_core_soul():
+                raise RuntimeError(
+                    "CRITICAL: Core Soul integrity check FAILED. "
+                    "Archie refuses to start."
+                )
+            # Wire coordinator into orchestrator (engines will finish init async)
+            set_engine_coordinator(coordinator)
+            print("Archie engines: scheduled for async initialization")
+            return
+        except RuntimeError:
+            pass  # No running loop — safe to create one
+
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(_init())
+        loop.close()
+
+        # Wire engines into the orchestrator
+        set_engine_coordinator(coordinator)
+        _engines_initialized = True
+        status = coordinator.status()
+        print(f"Archie engines: {status}")
+
+    except RuntimeError as e:
+        if "Core Soul" in str(e):
+            print(f"CRITICAL: {e}")
+            raise
+        print(f"Warning: Engine initialization: {e}")
+    except Exception as e:
+        print(f"Warning: Engine initialization failed: {e}")
+        print("Archie will operate in degraded mode (no engines)")
+
+
+_initialize_engines_sync()
 
 
 async def _reconstruct_state_from_supabase(data: dict) -> OrchestratorState | None:
@@ -1659,6 +1724,48 @@ Use `playbook_link_repo` to associate a repository:
 playbook_link_repo session_id="{session_id}" repo_url="https://github.com/..."
 ```
 """
+
+
+@mcp.tool(name="playbook_health_check")
+async def health_check() -> str:
+    """
+    Run a health check across all active projects.
+
+    Archie's Heartbeat Engine scans all sessions and reports:
+    - Stale projects (no activity)
+    - Low artifact quality
+    - Missing features in implementation phase
+    - Overall health dashboard
+
+    Returns:
+        Markdown dashboard with project health and alerts
+    """
+    if not coordinator.is_ready:
+        return "## Health Check\n\nEngines not initialized. Health check unavailable."
+
+    dashboard = coordinator.heartbeat.get_dashboard()
+    alerts = coordinator.heartbeat.run_health_check()
+
+    if alerts:
+        alert_section = "\n\n## Active Alerts\n\n"
+        for alert in alerts:
+            sev = alert.severity.value.upper()
+            alert_section += f"- **[{sev}]** {alert.project_name}: {alert.title}\n"
+            alert_section += f"  {alert.description}\n"
+            alert_section += f"  Suggested: {alert.suggested_action}\n\n"
+        dashboard += alert_section
+
+    # Add engine status
+    status = coordinator.status()
+    engine_section = "\n---\n\n## Engine Status\n\n"
+    for engine_name, ready in status.items():
+        if engine_name == "all_ready":
+            continue
+        indicator = "OK" if ready else "DOWN"
+        engine_section += f"- **{engine_name.title()} Engine**: {indicator}\n"
+    dashboard += engine_section
+
+    return dashboard
 
 
 def main():
