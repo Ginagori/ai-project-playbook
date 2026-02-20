@@ -1,0 +1,6 @@
+# Archie — Core Soul Protection
+# ANY change to core_soul.py requires 2 security leads approval.
+# This is the immutable identity of the Playbook PM Agent.
+# DO NOT bypass this review requirement.
+
+agent/core_soul.py @Ginagori @nivanta-ai/security-leads
