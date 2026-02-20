@@ -20,12 +20,14 @@
 
 ## Core Soul
 
-El Core Soul de Archie vive en `agent/core_soul.py`. Es INMUTABLE y tiene 4 capas de proteccion:
+El Core Soul de Archie vive en `agent/core_soul.py`. Es INMUTABLE y tiene 3 capas de proteccion independientes:
 
-1. **CODEOWNERS** — Requiere 2 security leads para cualquier cambio
-2. **Git** — Commits firmados con GPG + 2 PR approvals
-3. **CI** — SHA-256 verificado contra hash registrado en vault
-4. **Runtime** — Hash verificado en cada startup; mismatch = REFUSE TO START + alerta
+1. **Runtime** — SHA-256 hardcodeado verificado en cada startup; mismatch = REFUSE TO START
+2. **CI** — GitHub Action (`core-soul-integrity.yml`) verifica hash en cada push/PR. Falla si:
+   - `CORE_SOUL` content no coincide con `EXPECTED_HASH` hardcodeado
+   - `EXPECTED_HASH` no coincide con `.github/core_soul.sha256`
+   - `EXPECTED_HASH` esta computado dinamicamente (debe ser string literal)
+3. **Pre-commit hook** — Bloquea commits locales con hashes inconsistentes (`scripts/pre-commit-core-soul.sh`)
 
 ### 7 Directivas Inmutables
 
@@ -194,10 +196,10 @@ Implementacion de 6 PRPs para evolucionar de MCP estatico a agente con memoria r
 ### Sesion 2: Nacimiento de Archie (commits `64e0823`, `5111881`)
 
 1. **Core Soul** (`agent/core_soul.py`) — 7 directivas inmutables + verificacion SHA-256
-2. **CODEOWNERS** (`.github/CODEOWNERS`) — Proteccion de 2 reviewers para core_soul.py
+2. **CODEOWNERS** (`.github/CODEOWNERS`) — Documenta ownership del Core Soul
 3. **Skill `/archie`** (`.claude/commands/archie.md`) — Comando de Claude Code
 
-### Sesion 3: 4 Engines (en progreso)
+### Sesion 3: 4 Engines (commit `fdf3aa8`)
 
 Implementacion de los 4 motores:
 
@@ -221,7 +223,7 @@ Modificaciones:
 
 | Archivo | Proposito |
 |---------|-----------|
-| `agent/core_soul.py` | Identidad inmutable de Archie (CODEOWNERS) |
+| `agent/core_soul.py` | Identidad inmutable de Archie (hash hardcodeado) |
 | `agent/engines/` | Los 4 motores del agente |
 | `agent/orchestrator.py` | Maquina de estados LangGraph (2045 lineas) |
 | `agent/memory_bridge.py` | Retrieval de lecciones (envuelto por Memory Engine) |
@@ -230,7 +232,10 @@ Modificaciones:
 | `agent/meta_learning/` | Captura y sugerencia de patrones |
 | `mcp_server/playbook_mcp.py` | 27+ MCP tools |
 | `.claude/commands/archie.md` | Skill de Claude Code |
-| `.github/CODEOWNERS` | Proteccion del Core Soul |
+| `.github/CODEOWNERS` | Ownership del Core Soul |
+| `.github/core_soul.sha256` | Hash externo de referencia (verificado por CI) |
+| `.github/workflows/core-soul-integrity.yml` | GitHub Action que verifica el hash |
+| `scripts/pre-commit-core-soul.sh` | Hook local que bloquea commits inconsistentes |
 
 ---
 

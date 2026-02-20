@@ -2,7 +2,7 @@
 Soul Engine — Core Soul integrity + context assembly for artifact generation.
 
 Responsibilities:
-  - Verify Core Soul hash at initialization (4-layer protection)
+  - Verify Core Soul hash at initialization (3-layer protection)
   - Build structured context blocks for each orchestrator phase
   - Validate that outputs don't leak IP or violate directives
   - Provide Archie's identity (personality, language, methodology)

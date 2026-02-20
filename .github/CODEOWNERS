@@ -1,6 +1,13 @@
 # Archie — Core Soul Protection
-# ANY change to core_soul.py requires 2 security leads approval.
+# ANY change to core_soul.py or its hash requires team review.
 # This is the immutable identity of the Playbook PM Agent.
-# DO NOT bypass this review requirement.
+#
+# NOTE: Both team members share the @Ginagori account, so GitHub
+# cannot enforce 2-person review. Real enforcement comes from:
+#   1. Hardcoded SHA-256 hash in core_soul.py (runtime verification)
+#   2. External hash in .github/core_soul.sha256 (CI verification)
+#   3. GitHub Action: core-soul-integrity.yml (blocks mismatched hashes)
+#   4. Pre-commit hook: scripts/pre-commit-core-soul.sh
 
-agent/core_soul.py @Ginagori @nivanta-ai/security-leads
+agent/core_soul.py       @Ginagori
+.github/core_soul.sha256 @Ginagori

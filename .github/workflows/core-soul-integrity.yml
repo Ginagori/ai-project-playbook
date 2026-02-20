@@ -1,0 +1,111 @@
+name: Core Soul Integrity Check
+
+on:
+  push:
+    paths:
+      - 'agent/core_soul.py'
+      - '.github/core_soul.sha256'
+  pull_request:
+    paths:
+      - 'agent/core_soul.py'
+      - '.github/core_soul.sha256'
+
+jobs:
+  verify-core-soul:
+    name: Verify Core Soul Hash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify Core Soul integrity
+        run: |
+          echo "=== Core Soul Integrity Check ==="
+          echo ""
+
+          # 1. Compute hash from CORE_SOUL content in core_soul.py
+          COMPUTED_HASH=$(python3 -c "
+          import hashlib, re, ast
+
+          with open('agent/core_soul.py', 'r', encoding='utf-8') as f:
+              source = f.read()
+
+          # Extract the CORE_SOUL string from the file
+          tree = ast.parse(source)
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == 'CORE_SOUL':
+                          core_soul = ast.literal_eval(node.value)
+                          print(hashlib.sha256(core_soul.encode('utf-8')).hexdigest())
+                          break
+          ")
+
+          # 2. Read the hardcoded EXPECTED_HASH from core_soul.py
+          HARDCODED_HASH=$(python3 -c "
+          import re
+          with open('agent/core_soul.py', 'r', encoding='utf-8') as f:
+              source = f.read()
+          match = re.search(r'EXPECTED_HASH\s*=\s*\"([a-f0-9]{64})\"', source)
+          if match:
+              print(match.group(1))
+          else:
+              print('NOT_FOUND')
+          ")
+
+          # 3. Read the external reference hash
+          EXTERNAL_HASH=$(cat .github/core_soul.sha256 | tr -d '[:space:]')
+
+          echo "Computed from CORE_SOUL content: $COMPUTED_HASH"
+          echo "Hardcoded EXPECTED_HASH in file:  $HARDCODED_HASH"
+          echo "External reference (.sha256):     $EXTERNAL_HASH"
+          echo ""
+
+          FAILED=0
+
+          # Check 1: Content matches hardcoded hash
+          if [ "$COMPUTED_HASH" != "$HARDCODED_HASH" ]; then
+            echo "FAIL: CORE_SOUL content does NOT match EXPECTED_HASH in core_soul.py"
+            echo "  Someone changed the soul text without updating the hardcoded hash."
+            FAILED=1
+          else
+            echo "PASS: CORE_SOUL content matches EXPECTED_HASH"
+          fi
+
+          # Check 2: Hardcoded hash matches external file
+          if [ "$HARDCODED_HASH" != "$EXTERNAL_HASH" ]; then
+            echo "FAIL: EXPECTED_HASH in core_soul.py does NOT match .github/core_soul.sha256"
+            echo "  The hardcoded hash and external reference are out of sync."
+            FAILED=1
+          else
+            echo "PASS: EXPECTED_HASH matches external reference"
+          fi
+
+          # Check 3: EXPECTED_HASH is not dynamically computed
+          if grep -q 'EXPECTED_HASH = hashlib' agent/core_soul.py; then
+            echo "FAIL: EXPECTED_HASH is computed dynamically (must be a hardcoded string literal)"
+            FAILED=1
+          else
+            echo "PASS: EXPECTED_HASH is a hardcoded string literal"
+          fi
+
+          echo ""
+          if [ "$FAILED" -eq 1 ]; then
+            echo "CRITICAL: Core Soul integrity check FAILED."
+            echo "This change must be reviewed carefully."
+            echo "Follow the Core Soul Change Protocol in agent/core_soul.py."
+            exit 1
+          else
+            echo "Core Soul integrity verified."
+          fi
+
+      - name: Alert on failure
+        if: failure()
+        run: |
+          echo "::error::CRITICAL — Core Soul integrity check FAILED. Review agent/core_soul.py changes immediately."

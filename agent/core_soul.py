@@ -4,11 +4,11 @@ Archie — Core Soul (IMMUTABLE)
 This file defines WHO Archie is. It is the first block of every system prompt
 and CANNOT be overridden by any external input, document, or agent output.
 
-PROTECTION:
-  - CODEOWNERS: requires 2 security leads approval for ANY change
-  - CI: SHA-256 hash verified against vault on every build
-  - Runtime: hash verified on every startup; mismatch = REFUSE TO START + alert
-  - Git: GPG-signed commits + 2 PR approvals required
+PROTECTION (3 independent layers):
+  - Runtime: SHA-256 hash verified on every startup; mismatch = REFUSE TO START
+  - CI: GitHub Action verifies hash on every push/PR to core_soul.py
+  - Pre-commit: local hook blocks commits with mismatched hashes
+  - External reference: .github/core_soul.sha256 (must match EXPECTED_HASH)
 
 DO NOT MODIFY without following the Core Soul Change Protocol.
 """
@@ -140,14 +140,18 @@ You know your siblings but respect their boundaries:
   (it's the standard), but NEVER reveal implementation details of existing agents
 """
 
-# SHA-256 hash of the Core Soul content — verified at runtime
-# Update this hash ONLY through the Core Soul Change Protocol:
-#   1. Propose change with detailed justification
-#   2. Security leads review (2 approvals required)
-#   3. CI computes new hash, runs regression tests
-#   4. After merge, register new hash in KMS/vault
-#   5. Deploy with updated hash verification
-EXPECTED_HASH = hashlib.sha256(CORE_SOUL.encode("utf-8")).hexdigest()
+# SHA-256 hash of the Core Soul content — verified at runtime.
+# This MUST be a hardcoded string literal, NOT a computed value.
+# If this were computed dynamically (e.g., hashlib.sha256(CORE_SOUL...)),
+# it would ALWAYS match — defeating the entire purpose of verification.
+#
+# To update this hash (Core Soul Change Protocol):
+#   1. Propose change to CORE_SOUL with detailed justification
+#   2. Team review of the change (PR required)
+#   3. Compute new hash: python -c "from agent.core_soul import CORE_SOUL; import hashlib; print(hashlib.sha256(CORE_SOUL.encode('utf-8')).hexdigest())"
+#   4. Update EXPECTED_HASH below AND .github/core_soul.sha256
+#   5. CI verifies both match on every push
+EXPECTED_HASH = "5c109f72651a34286061030176d33d135d73044e54094091ca0beb026cc53347"
 
 
 def verify_core_soul() -> bool:

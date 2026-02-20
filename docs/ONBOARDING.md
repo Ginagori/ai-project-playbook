@@ -355,10 +355,11 @@ Usa playbook_share_lesson con:
 
 ### "CRITICAL: Core Soul integrity check FAILED"
 
-Esto significa que `agent/core_soul.py` fue modificado sin seguir el Core Soul Change Protocol.
-1. No modifiques `agent/core_soul.py` directamente
-2. Cualquier cambio requiere 2 security leads approval (CODEOWNERS)
-3. Contacta a Natalia si ves este error
+Esto significa que `CORE_SOUL` en `agent/core_soul.py` fue modificado sin actualizar el hash.
+1. NO modifiques `agent/core_soul.py` sin seguir el Core Soul Change Protocol
+2. Si el cambio es intencional, actualiza `EXPECTED_HASH` en el archivo Y `.github/core_soul.sha256`
+3. Si no fue intencional, revierte los cambios: `git checkout agent/core_soul.py`
+4. CI tambien verifica el hash — un push con hashes inconsistentes fallara el build
 
 ### "/archie no aparece como skill"
 
@@ -412,9 +413,11 @@ playbook_continue session_id="abc123"
 
 ### Archie (Core Soul)
 - `agent/core_soul.py` contiene la identidad inmutable de Archie (7 directivas)
-- Protegido por CODEOWNERS — requiere 2 security leads para cualquier cambio
-- SHA-256 hash verificado en cada startup del MCP server
-- Si el hash no coincide, Archie se niega a arrancar
+- Protegido por 3 capas independientes:
+  1. **Runtime** — SHA-256 hardcodeado verificado en cada startup; mismatch = refuse to start
+  2. **CI** — GitHub Action verifica hash en cada push/PR a `core_soul.py`
+  3. **Pre-commit hook** — Bloquea commits con hashes inconsistentes
+- Hash externo de referencia: `.github/core_soul.sha256`
 - Ver `docs/ARCHIE.md` para detalles completos
 
 ### Propiedad Intelectual
