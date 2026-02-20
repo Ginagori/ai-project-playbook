@@ -109,7 +109,7 @@ Factual knowledge extracted from conversations.
 ## Facts
 - Supabase project ID: lnuyanxodyuoadawvjle
 - Team ID: 9f1c0ad9-3ba3-4ccf-8a02-fcbb94fcab6d
-- MCP Server has 30 tools
+- MCP Server has 33 tools
 - Playbook has ~71 files, ~39K lines
 ```
 

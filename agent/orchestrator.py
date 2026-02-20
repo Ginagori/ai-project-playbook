@@ -345,8 +345,8 @@ These will be incorporated into your project artifacts.
 ---
 
 """
-        except Exception:
-            pass  # Similar project detection is informational, not blocking
+        except Exception as e:
+            print(f"[Archie] Discovery memory query failed: {e}")
 
         # If there are follow-up questions, ask the first one
         if followups:
@@ -694,8 +694,8 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
 
         if gotchas:
             gotchas_section = "\n## Known Gotchas\n\n" + "\n".join(gotchas) + "\n"
-    except Exception:
-        pass  # Graceful fallback when engines unavailable
+    except Exception as e:
+        print(f"[Archie] CLAUDE.md memory enrichment failed: {e}")
 
     claude_md = f"""# {project.objective}
 {domain_section}
@@ -843,8 +843,8 @@ def _generate_prd(project: ProjectState) -> str:
             lessons_section = "\n## Lessons from Similar Projects\n\n"
             for lesson in all_lessons[:5]:
                 lessons_section += f"- **{lesson.title}**: {lesson.recommendation}\n"
-    except Exception:
-        pass  # Graceful fallback
+    except Exception as e:
+        print(f"[Archie] PRD memory enrichment failed: {e}")
 
     prd = f"""# Product Requirements Document
 
@@ -995,7 +995,8 @@ def _get_learned_features(project_type: str) -> list[Feature]:
                 seen_names.add(lesson.title)
 
         return features
-    except Exception:
+    except Exception as e:
+        print(f"[Archie] Learned features retrieval failed: {e}")
         return []
 
 

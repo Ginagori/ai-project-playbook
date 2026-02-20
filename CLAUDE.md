@@ -6,7 +6,7 @@ This is an **MCP Server** that exposes an AI PM Agent for Claude Code. The agent
 
 **Repository:** `C:\Users\natal\Proyectos\ai-project-playbook\`
 **Team:** Nivanta AI
-**Status:** Production (27 MCP tools)
+**Status:** Production (33 MCP tools)
 
 ---
 
@@ -28,20 +28,25 @@ This is an **MCP Server** that exposes an AI PM Agent for Claude Code. The agent
 ```
 ai-project-playbook/
 ├── agent/                    # Core agent logic
+│   ├── core_soul.py          # Archie's immutable identity (SHA-256 protected)
+│   ├── engines/              # 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 │   ├── models/               # Pydantic models (project.py)
 │   ├── orchestrator.py       # LangGraph state machine
+│   ├── memory_bridge.py      # Unified lesson retrieval
+│   ├── template_loader.py    # Official template parser
 │   ├── tools/                # Agent tools (playbook_rag, file_operations)
 │   ├── factory/              # Multi-agent patterns (6 patterns)
 │   ├── specialized/          # Specialized agents (researcher, coder, etc.)
 │   ├── meta_learning/        # Pattern capture & recommendations
 │   └── supabase_client.py    # Database operations
 ├── mcp_server/
-│   └── playbook_mcp.py       # MCP Server (27 tools)
+│   └── playbook_mcp.py       # MCP Server (33 tools)
 ├── playbook/                 # Methodology content (63 markdown files)
 ├── supabase/
 │   ├── schema.sql            # Database schema
 │   └── migrations/           # SQL migrations
 ├── docs/
+│   ├── ARCHIE.md             # Archie agent documentation
 │   └── ONBOARDING.md         # Team setup guide
 └── scripts/
     └── index_playbook.py     # RAG indexer
@@ -266,13 +271,15 @@ refactor: Restructure code
 
 ---
 
-## Current State (Session 10)
+## Current State
 
-- **27 MCP Tools** functional
+- **33 MCP Tools** functional
+- **Archie**: Core Soul + 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 - **Supabase** integration complete
 - **Project sync** between team members
 - **Repository linking** for projects
 - **Meta-learning** from completed projects
+- **CI protection** for Core Soul integrity
 
 ---
 

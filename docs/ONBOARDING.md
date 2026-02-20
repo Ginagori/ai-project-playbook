@@ -193,7 +193,7 @@ El agente iniciara el flujo de Discovery con preguntas sobre:
 - Funcionalidades principales
 - Escala esperada
 
-### Comandos disponibles (28 tools)
+### Comandos disponibles (33 tools)
 
 #### Project Management (13 tools)
 | Tool | Descripcion |

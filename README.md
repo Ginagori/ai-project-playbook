@@ -115,7 +115,12 @@ ai-project-playbook/
 │   ├── templates/          # CLAUDE.md template, PRD template, PRP template
 │   └── examples/           # Real project examples
 ├── agent/                  # Agent implementation
+│   ├── core_soul.py        # Archie's immutable identity (SHA-256 protected)
+│   ├── engines/            # 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 │   ├── models/             # Pydantic models (ProjectState, ProjectType)
+│   ├── orchestrator.py     # LangGraph state machine
+│   ├── memory_bridge.py    # Unified lesson retrieval
+│   ├── template_loader.py  # Official template parser
 │   ├── evals/              # Artifact evaluation (rules, scoring)
 │   ├── tools/              # Agent tools (RAG with hybrid search)
 │   ├── factory/            # Multi-agent patterns (6 patterns)
@@ -123,17 +128,26 @@ ai-project-playbook/
 │   ├── meta_learning/      # Pattern capture, recommendations, auto-capture
 │   └── system_review.py    # Meta-analysis of plan vs execution
 ├── mcp_server/             # MCP Server
-│   └── playbook_mcp.py     # Main server (30 tools)
+│   └── playbook_mcp.py     # Main server (33 tools)
+├── .github/                # CI + Core Soul protection
+│   ├── CODEOWNERS          # Core Soul ownership
+│   ├── core_soul.sha256    # External hash reference
+│   └── workflows/          # GitHub Actions (Core Soul integrity check)
 ├── .claude/commands/       # Slash commands
+│   ├── archie.md           # /archie — PM Agent skill
 │   └── system-review.md    # /system-review command
-├── scripts/                # Utilities
-│   └── index_playbook.py   # RAG indexer
+├── scripts/                # Utilities + hooks
+│   ├── index_playbook.py   # RAG indexer
+│   └── pre-commit-core-soul.sh  # Core Soul pre-commit hook
+├── docs/                   # Documentation
+│   ├── ARCHIE.md           # Archie agent documentation
+│   └── ONBOARDING.md       # Team setup guide
 └── references/             # Quick navigation guides
 ```
 
-## MCP Tools (30 total)
+## MCP Tools (33 total)
 
-### Project Management Tools (10)
+### Project Management Tools (13)
 
 | Tool | Description |
 |------|-------------|
@@ -145,6 +159,9 @@ ai-project-playbook/
 | `playbook_list_sessions` | List all active sessions (local + team) |
 | `playbook_get_claude_md` | Get generated CLAUDE.md |
 | `playbook_get_prd` | Get generated PRD |
+| `playbook_get_prp` | Get feature plan in PRP format (execution blueprint) |
+| `playbook_execution_package` | Complete execution package for autonomous implementation |
+| `playbook_handoff` | Write all artifacts to disk for Claude Code execution |
 | `playbook_link_repo` | Link a GitHub repository to a project |
 | `playbook_get_repo` | Get the repository URL for a project |
 
@@ -180,13 +197,13 @@ ai-project-playbook/
 | `playbook_share_lesson` | Share a lesson with the team |
 | `playbook_team_lessons` | View team's shared lessons |
 
-### Quality & Review Tools (3) — NEW
+### Quality & Health Tools (3)
 
 | Tool | Description |
 |------|-------------|
 | `playbook_evaluate_artifact` | Run quality checks on CLAUDE.md, PRD, or feature plans |
 | `playbook_system_review` | Meta-analysis of plan vs execution (confidence 1-10) |
-| `playbook_get_prp` | Get feature plan in PRP format (agent-to-agent ready) |
+| `playbook_health_check` | Project health dashboard (Heartbeat Engine) |
 
 ## Supported Project Types
 

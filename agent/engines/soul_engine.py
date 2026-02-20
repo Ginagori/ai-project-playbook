@@ -58,7 +58,7 @@ class SoulEngine(BaseEngine):
         if not verify_core_soul():
             raise RuntimeError(
                 "CRITICAL: Core Soul integrity check FAILED. "
-                "Archie refuses to start. Alert security leads immediately."
+                "Archie refuses to start. Alert the team immediately."
             )
 
         self._core_soul_text = get_core_soul()

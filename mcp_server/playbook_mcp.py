@@ -74,51 +74,21 @@ coordinator = EngineCoordinator()
 _engines_initialized = False
 
 
-def _initialize_engines_sync() -> None:
-    """Initialize all 4 engines synchronously. Handles event loop detection."""
+async def _ensure_engines_initialized() -> None:
+    """Ensure all 4 engines are initialized. Safe to call multiple times."""
     global _engines_initialized
     if _engines_initialized:
         return
 
-    import asyncio
-
-    async def _init() -> None:
+    try:
         await coordinator.initialize(
             supabase_client=db,
             sessions_store=sessions,
         )
-
-    try:
-        # Check if an event loop is already running (e.g., imported from async context)
-        try:
-            loop = asyncio.get_running_loop()
-            # Loop is running — schedule initialization and return.
-            # The engines will be initialized when the event loop processes this task.
-            loop.create_task(_init())
-            # For now, do sync-only initialization (Core Soul verification)
-            from agent.core_soul import verify_core_soul
-            if not verify_core_soul():
-                raise RuntimeError(
-                    "CRITICAL: Core Soul integrity check FAILED. "
-                    "Archie refuses to start."
-                )
-            # Wire coordinator into orchestrator (engines will finish init async)
-            set_engine_coordinator(coordinator)
-            print("Archie engines: scheduled for async initialization")
-            return
-        except RuntimeError:
-            pass  # No running loop — safe to create one
-
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(_init())
-        loop.close()
-
-        # Wire engines into the orchestrator
         set_engine_coordinator(coordinator)
         _engines_initialized = True
         status = coordinator.status()
         print(f"Archie engines: {status}")
-
     except RuntimeError as e:
         if "Core Soul" in str(e):
             print(f"CRITICAL: {e}")
@@ -127,6 +97,32 @@ def _initialize_engines_sync() -> None:
     except Exception as e:
         print(f"Warning: Engine initialization failed: {e}")
         print("Archie will operate in degraded mode (no engines)")
+
+
+def _initialize_engines_sync() -> None:
+    """Initialize engines at module load. Defers to first tool call if async."""
+    import asyncio
+
+    # Verify Core Soul synchronously (this MUST pass even at import time)
+    from agent.core_soul import verify_core_soul
+    if not verify_core_soul():
+        raise RuntimeError(
+            "CRITICAL: Core Soul integrity check FAILED. "
+            "Archie refuses to start."
+        )
+
+    try:
+        asyncio.get_running_loop()
+        # Loop is running (e.g., imported from async context).
+        # Defer full engine init to first tool call via _ensure_engines_initialized().
+        print("Archie: Core Soul verified. Engine init deferred to first tool call.")
+        return
+    except RuntimeError:
+        pass  # No running loop — safe to create one
+
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(_ensure_engines_initialized())
+    loop.close()
 
 
 _initialize_engines_sync()
@@ -220,6 +216,9 @@ async def start_project(objective: str, mode: str = "supervised") -> str:
     Returns:
         Session ID and first question from Discovery phase
     """
+    # Ensure engines are initialized before first use
+    await _ensure_engines_initialized()
+
     # Create initial state using the orchestrator
     state = create_initial_state(objective, mode)
     session_id = state.project.id
@@ -258,6 +257,9 @@ async def answer_question(session_id: str, answer: str) -> str:
     Returns:
         Next question or action from the agent
     """
+    # Ensure engines are initialized
+    await _ensure_engines_initialized()
+
     # Try local first, then Supabase
     if session_id not in sessions:
         # Try to load from Supabase
@@ -307,6 +309,8 @@ async def continue_project(session_id: str) -> str:
     Returns:
         Current state and next action
     """
+    await _ensure_engines_initialized()
+
     # Try local first, then Supabase
     if session_id not in sessions:
         # Try to load from Supabase
@@ -1740,6 +1744,8 @@ async def health_check() -> str:
     Returns:
         Markdown dashboard with project health and alerts
     """
+    await _ensure_engines_initialized()
+
     if not coordinator.is_ready:
         return "## Health Check\n\nEngines not initialized. Health check unavailable."
 
