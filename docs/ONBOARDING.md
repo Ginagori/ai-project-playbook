@@ -126,12 +126,12 @@ Archie es el agente PM de Nivanta AI. Para invocarlo desde CUALQUIER proyecto:
 # Crear directorio global de commands
 mkdir "$env:USERPROFILE\.claude\commands" -Force
 
-# Copiar el skill desde el repo del Playbook (ajustar ruta segun tu maquina)
-copy "<ruta-al-repo>\.claude\commands\archie.md" "$env:USERPROFILE\.claude\commands\archie.md"
+# Descargar la ultima version directo desde GitHub
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Ginagori/ai-project-playbook/master/.claude/commands/archie.md" -OutFile "$env:USERPROFILE\.claude\commands\archie.md"
 ```
 
-> **NOTA:** Ajusta `<ruta-al-repo>` a la ruta donde tienes clonado `ai-project-playbook`.
-> Cuando se actualice `archie.md` en el repo (git pull), hay que volver a copiar.
+Para actualizar a la ultima version, ejecuta el mismo comando de `Invoke-WebRequest`.
+
 > Ver documentacion completa del agente: `docs/ARCHIE.md`
 
 ### Paso 5: Reiniciar Claude Code
