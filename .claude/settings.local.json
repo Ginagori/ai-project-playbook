@@ -1,12 +1,73 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__playbook__*",
+      "Read(//c/Users/natal/Proyectos/web-nivanta/web/src/app/privacidad/**)",
+      "Read(//c/Users/natal/Proyectos/web-nivanta/docs/**)",
+      "Read(//c/Users/natal/Proyectos/web-nivanta/**)",
+      "Bash(ls:*)",
+      "Bash(cmd.exe /c \"dir /b C:\\\\Users\\\\natal\\\\Proyectos\\\\plataforma-sst\")",
+      "Bash(cmd.exe /c \"dir /b C:\\\\Users\\\\natal\\\\Proyectos\\\\plataforma-sst\"\")",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Read(//c/Users/natal/Proyectos/komplia/docs/**)",
+      "Read(//c/Users/natal/Proyectos/komplia/**)",
+      "Bash(dir:*)",
+      "Read(//c/Users/natal/Proyectos/nova/docs/**)",
+      "Read(//c/Users/natal/Proyectos/nova/**)",
+      "Bash(powershell -Command:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//c/Users/natal/Proyectos/skills-builder/**)",
+      "Bash(set:*)",
+      "Bash(PYTHONUTF8=1 python:*)",
+      "WebFetch(domain:jamesvanderlust.com)",
+      "WebFetch(domain:www.educaciontrespuntocero.com)",
+      "WebFetch(domain:www.elauladepapeloxford.com)",
+      "WebFetch(domain:jamesvanderlust.teachable.com)",
+      "WebFetch(domain:www.amazon.es)",
+      "WebFetch(domain:ciclip.com)",
+      "WebFetch(domain:tecnicasdeaprendizaje.net)",
+      "WebFetch(domain:handmadefestivalbcn.com)",
+      "WebFetch(domain:www.udemy.com)",
+      "WebFetch(domain:www.banhoff.es)",
+      "Bash(cmd /c \"set PYTHONUTF8=1 && python skills/skill-creator/scripts/package_skill.py skills/sparks-pedagogy\")",
+      "Bash($env:PYTHONUTF8=\"1\")",
+      "Bash(gh api:*)",
+      "Bash(xcopy:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git rm --cached \"assets/brand\\\\357\\\\200\\\\242 && cp C\\\\357\\\\200\\\\272UsersnatalProyectoskidspark-oldpublicFavicon_KidSpark.png C\\\\357\\\\200\\\\272UsersnatalProyectoskidsparkassetsbrand\\\\357\\\\200\\\\242\")",
+      "Bash(git reset:*)",
+      "Bash(git rm:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(.venvScriptspython.exe:*)",
+      "Bash(.venv/Scripts/python.exe:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\natal\\Proyectos\\komplia\\docs",
+      "C:\\Users\\natal\\Proyectos\\komplia\\supabase\\migrations",
+      "C:\\Users\\natal\\Proyectos\\komplia",
+      "C:\\Users\\natal\\Proyectos\\kidspark",
+      "C:\\Users\\natal\\Proyectos\\skills-builder\\skills\\educational-worksheet-designer",
+      "C:\\Users\\natal\\Proyectos\\skills-builder\\skills\\james-van-der-lust-method"
+    ]
+  },
   "mcpServers": {
     "playbook": {
       "command": "uv",
-      "args": ["run", "python", "-m", "mcp_server.playbook_mcp"],
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "mcp_server.playbook_mcp"
+      ],
       "cwd": "C:\\Users\\natal\\Proyectos\\ai-project-playbook"
     }
-  },
-  "permissions": {
-    "allow": ["mcp__playbook__*"]
   }
 }
