@@ -343,6 +343,15 @@ class SupabaseClient:
             "confidence": confidence
         }
 
+        # Generate embedding for semantic search (best-effort)
+        try:
+            from agent.embedding import generate_lesson_embedding
+            embedding = generate_lesson_embedding(title, description, recommendation)
+            if embedding:
+                data["embedding"] = embedding
+        except Exception:
+            pass  # Embedding is optional
+
         result = self.client.table("lessons_learned").insert(data).execute()
         return result.data[0] if result.data else None
 

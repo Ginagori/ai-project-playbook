@@ -39,6 +39,7 @@ from agent.meta_learning import (
     get_lessons_db,
     PatternCategory,
 )
+from agent.memory_bridge import MemoryBridge
 from agent.supabase_client import configure_supabase, get_supabase_client
 from agent.engines import EngineCoordinator
 from agent.orchestrator import set_engine_coordinator
@@ -1145,11 +1146,24 @@ async def complete_project(session_id: str, user_rating: int = 4, notes: str = "
     Returns:
         Summary of captured lessons
     """
+    # Try local first, then Supabase
+    if session_id not in sessions:
+        if SUPABASE_ENABLED and db:
+            remote_data = await db.load_orchestrator_state(session_id)
+            if remote_data:
+                state = await _reconstruct_state_from_supabase(remote_data)
+                if state:
+                    sessions[session_id] = state
+
     if session_id not in sessions:
         return f"Error: Session '{session_id}' not found."
 
     state = sessions[session_id]
     project = state.project
+
+    # Mark as completed in Supabase
+    if SUPABASE_ENABLED and db:
+        await db.complete_project(session_id)
 
     # Capture outcome
     outcome = capture_project_outcome(project)
@@ -1158,8 +1172,8 @@ async def complete_project(session_id: str, user_rating: int = 4, notes: str = "
     outcome.user_rating = user_rating
     outcome.user_notes = notes if notes else None
 
-    db = get_lessons_db()
-    db.add_outcome(outcome)
+    lessons_db = get_lessons_db()
+    lessons_db.add_outcome(outcome)
 
     output = f"""## Project Completed: {session_id}
 
@@ -1179,7 +1193,7 @@ async def complete_project(session_id: str, user_rating: int = 4, notes: str = "
         output += f"- ❌ {item}\n"
 
     # Get stats
-    stats = db.get_stats()
+    stats = lessons_db.get_stats()
     output += f"""
 ### Meta-Learning Stats
 - **Total Lessons Captured**: {stats['total_lessons']}
@@ -1188,6 +1202,9 @@ async def complete_project(session_id: str, user_rating: int = 4, notes: str = "
 
 _Lessons from this project will improve recommendations for future projects._
 """
+
+    # Clean up local session
+    del sessions[session_id]
 
     return output
 
@@ -1772,6 +1789,194 @@ async def health_check() -> str:
     dashboard += engine_section
 
     return dashboard
+
+
+@mcp.tool(name="playbook_vote_lesson")
+async def vote_lesson(title: str, vote: str = "up") -> str:
+    """
+    Vote on a lesson to adjust its quality/confidence.
+
+    Args:
+        title: The lesson title (case-insensitive match)
+        vote: "up" to increase confidence, "down" to decrease
+
+    Returns:
+        Confirmation with new confidence score
+    """
+    await _ensure_engines_initialized()
+
+    if vote not in ("up", "down"):
+        return "## Error\n\nVote must be 'up' or 'down'."
+
+    delta = 0.05 if vote == "up" else -0.05
+
+    # Update local
+    local_db = get_lessons_db()
+    updated_lesson = local_db.update_lesson_confidence(title, delta, vote)
+
+    # Update Supabase
+    supabase_updated = False
+    if SUPABASE_ENABLED and db:
+        try:
+            result = (
+                db.client.table("lessons_learned")
+                .select("id, confidence, upvotes, downvotes")
+                .eq("team_id", db.team_id)
+                .ilike("title", title)
+                .execute()
+            )
+            if result.data:
+                row = result.data[0]
+                new_conf = max(0.0, min(1.0, (row.get("confidence", 0.5) or 0.5) + delta))
+                vote_field = "upvotes" if vote == "up" else "downvotes"
+                current_votes = row.get(vote_field, 0) or 0
+                db.client.table("lessons_learned").update({
+                    "confidence": new_conf,
+                    vote_field: current_votes + 1,
+                }).eq("id", row["id"]).execute()
+                supabase_updated = True
+        except Exception as e:
+            print(f"Supabase vote update failed: {e}")
+
+    if not updated_lesson and not supabase_updated:
+        return f"## Not Found\n\nNo lesson matching '{title}'."
+
+    new_conf = f"{updated_lesson.confidence:.0%}" if updated_lesson else "updated"
+    sources = []
+    if updated_lesson:
+        sources.append("local")
+    if supabase_updated:
+        sources.append("Supabase")
+
+    return f"""## Vote Recorded
+
+**{title}** — {vote}voted.
+**New confidence:** {new_conf}
+**Updated in:** {' + '.join(sources)}
+"""
+
+
+@mcp.tool(name="playbook_remove_lesson")
+async def remove_lesson(title: str) -> str:
+    """
+    Remove a lesson from the knowledge base.
+
+    Args:
+        title: The lesson title to remove (case-insensitive match)
+
+    Returns:
+        Confirmation of removal
+    """
+    await _ensure_engines_initialized()
+
+    local_db = get_lessons_db()
+    local_removed = local_db.remove_lesson(title)
+
+    supabase_removed = False
+    if SUPABASE_ENABLED and db:
+        try:
+            result = (
+                db.client.table("lessons_learned")
+                .delete()
+                .eq("team_id", db.team_id)
+                .ilike("title", title)
+                .execute()
+            )
+            supabase_removed = bool(result.data)
+        except Exception as e:
+            print(f"Supabase remove failed: {e}")
+
+    if not local_removed and not supabase_removed:
+        return f"## Not Found\n\nNo lesson matching '{title}'."
+
+    sources = []
+    if local_removed:
+        sources.append("local")
+    if supabase_removed:
+        sources.append("Supabase")
+
+    return f"""## Lesson Removed
+
+**{title}** removed from {' + '.join(sources)}.
+"""
+
+
+@mcp.tool(name="playbook_lesson_stats")
+async def lesson_stats() -> str:
+    """
+    Show lesson quality statistics and health metrics.
+
+    Returns:
+        Dashboard with counts, quality scores, and flagged issues
+    """
+    await _ensure_engines_initialized()
+
+    local_db = get_lessons_db()
+    stats = local_db.get_stats()
+
+    output = f"""## Lesson Statistics
+
+**Total lessons:** {stats['total_lessons']}
+**Average confidence:** {stats['avg_confidence']:.0%}
+
+### By Category
+"""
+    for cat, count in sorted(stats["by_category"].items()):
+        output += f"- **{cat}**: {count}\n"
+
+    if stats["low_confidence_titles"]:
+        output += f"\n### Low Confidence ({stats['low_confidence_count']} lessons < 50%)\n"
+        for title in stats["low_confidence_titles"]:
+            output += f"- {title}\n"
+
+    if stats["duplicate_titles"]:
+        output += f"\n### Duplicates Found ({len(stats['duplicate_titles'])})\n"
+        for title in stats["duplicate_titles"]:
+            output += f"- {title}\n"
+
+    if stats["top_lessons"]:
+        output += "\n### Most Frequent\n"
+        for entry in stats["top_lessons"]:
+            output += f"- {entry['title']} (x{entry['frequency']})\n"
+
+    return output
+
+
+@mcp.tool(name="playbook_search_lessons")
+async def search_lessons(query: str, limit: int = 10) -> str:
+    """
+    Search lessons using semantic similarity.
+
+    Finds lessons by meaning, not just exact keywords.
+    Example: "database security" finds lessons about RLS, multi-tenant, auth.
+
+    Args:
+        query: Natural language query (e.g., "frontend state management patterns")
+        limit: Maximum results (default 10)
+
+    Returns:
+        Matching lessons ranked by semantic relevance
+    """
+    await _ensure_engines_initialized()
+
+    bridge = MemoryBridge.get_instance()
+    results = bridge.semantic_search(query, limit=limit)
+
+    if not results:
+        return f"## No Results\n\nNo lessons matching '{query}'."
+
+    output = f"## Lesson Search: \"{query}\"\n\n"
+    output += f"**{len(results)} results found**\n\n"
+
+    for lesson, score in results:
+        pct = f"{score:.0%}" if score <= 1.0 else f"{score:.1f}"
+        output += f"### [{pct}] {lesson.title}\n"
+        output += f"**Category:** {lesson.category.value} | "
+        output += f"**Confidence:** {lesson.confidence:.0%}\n"
+        output += f"{lesson.description}\n"
+        output += f"-> {lesson.recommendation}\n\n"
+
+    return output
 
 
 def main():

@@ -48,6 +48,8 @@ class LessonLearned(BaseModel):
     recommendation: str  # What to do differently
     confidence: float = Field(ge=0.0, le=1.0, default=0.7)  # How confident are we?
     frequency: int = Field(default=1)  # How many times seen?
+    upvotes: int = Field(default=0)
+    downvotes: int = Field(default=0)
 
     # Metadata
     project_types: list[str] = Field(default_factory=list)  # Where this applies
@@ -182,6 +184,38 @@ class LessonsDatabase:
 
         self._save()
 
+    def update_lesson_confidence(self, title: str, delta: float, vote_type: str) -> LessonLearned | None:
+        """Update a lesson's confidence and vote counts by title match.
+
+        Returns the updated lesson, or None if not found.
+        """
+        title_lower = title.lower().strip()
+        for lesson in self._lessons.values():
+            if lesson.title.lower().strip() == title_lower:
+                lesson.confidence = max(0.0, min(1.0, lesson.confidence + delta))
+                if vote_type == "up":
+                    lesson.upvotes += 1
+                else:
+                    lesson.downvotes += 1
+                lesson.updated_at = datetime.utcnow()
+                self._save()
+                return lesson
+        return None
+
+    def remove_lesson(self, title: str) -> bool:
+        """Remove a lesson by title match. Returns True if found and removed."""
+        title_lower = title.lower().strip()
+        to_remove = [
+            uid for uid, lesson in self._lessons.items()
+            if lesson.title.lower().strip() == title_lower
+        ]
+        if not to_remove:
+            return False
+        for uid in to_remove:
+            del self._lessons[uid]
+        self._save()
+        return True
+
     def add_outcome(self, outcome: ProjectOutcome) -> None:
         """Record a project outcome."""
         self._outcomes[outcome.id] = outcome
@@ -315,8 +349,8 @@ class LessonsDatabase:
         }
 
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.storage_path, "w") as f:
-            json.dump(data, f, indent=2, default=str)
+        with open(self.storage_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, default=str, ensure_ascii=False)
 
     def _load(self) -> None:
         """Load from storage."""
@@ -324,39 +358,57 @@ class LessonsDatabase:
             return
 
         try:
-            with open(self.storage_path) as f:
+            with open(self.storage_path, encoding="utf-8") as f:
                 data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[LessonsDB] Failed to read {self.storage_path}: {e}")
+            return
 
-            for lesson_data in data.get("lessons", []):
+        for i, lesson_data in enumerate(data.get("lessons", [])):
+            try:
                 lesson = LessonLearned(**lesson_data)
                 self._lessons[lesson.id] = lesson
+            except Exception as e:
+                title = lesson_data.get("title", f"lesson[{i}]")
+                print(f"[LessonsDB] Skipping unparseable lesson '{title}': {e}")
 
-            for outcome_data in data.get("outcomes", []):
+        for i, outcome_data in enumerate(data.get("outcomes", [])):
+            try:
                 outcome = ProjectOutcome(**outcome_data)
                 self._outcomes[outcome.id] = outcome
-        except Exception:
-            pass  # Ignore load errors
+            except Exception as e:
+                print(f"[LessonsDB] Skipping unparseable outcome[{i}]: {e}")
 
     def get_stats(self) -> dict[str, Any]:
-        """Get database statistics."""
+        """Get database statistics with quality metrics."""
+        lessons = list(self._lessons.values())
         outcomes = list(self._outcomes.values())
         success_outcomes = [o for o in outcomes if o.outcome == OutcomeType.SUCCESS]
 
+        total_confidence = sum(l.confidence for l in lessons)
+        low_confidence = [l.title for l in lessons if l.confidence < 0.5]
+
+        # Detect duplicates (same title, case-insensitive)
+        titles = [l.title.lower().strip() for l in lessons]
+        duplicates = [t for t in set(titles) if titles.count(t) > 1]
+
+        by_category: dict[str, int] = {}
+        for l in lessons:
+            cat = l.category.value if hasattr(l.category, "value") else str(l.category)
+            by_category[cat] = by_category.get(cat, 0) + 1
+
         return {
-            "total_lessons": len(self._lessons),
-            "total_outcomes": len(self._outcomes),
+            "total_lessons": len(lessons),
+            "total_outcomes": len(outcomes),
             "success_rate": len(success_outcomes) / len(outcomes) if outcomes else 0,
-            "lessons_by_category": {
-                cat.value: len([l for l in self._lessons.values() if l.category == cat])
-                for cat in PatternCategory
-            },
+            "by_category": by_category,
+            "avg_confidence": total_confidence / max(len(lessons), 1),
+            "low_confidence_count": len(low_confidence),
+            "low_confidence_titles": low_confidence[:10],
+            "duplicate_titles": duplicates,
             "top_lessons": [
                 {"title": l.title, "frequency": l.frequency}
-                for l in sorted(
-                    self._lessons.values(),
-                    key=lambda x: x.frequency,
-                    reverse=True
-                )[:5]
+                for l in sorted(lessons, key=lambda x: x.frequency, reverse=True)[:5]
             ],
         }
 

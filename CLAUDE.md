@@ -6,7 +6,7 @@ This is an **MCP Server** that exposes an AI PM Agent for Claude Code. The agent
 
 **Repository:** `C:\Users\natal\Proyectos\ai-project-playbook\`
 **Team:** Nivanta AI
-**Status:** Production (33 MCP tools)
+**Status:** Production (37 MCP tools)
 
 ---
 
@@ -32,7 +32,8 @@ ai-project-playbook/
 │   ├── engines/              # 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 │   ├── models/               # Pydantic models (project.py)
 │   ├── orchestrator.py       # LangGraph state machine
-│   ├── memory_bridge.py      # Unified lesson retrieval
+│   ├── memory_bridge.py      # Hybrid lesson retrieval (semantic + keyword)
+│   ├── embedding.py          # Multi-backend embedding generator (OpenAI/Voyage/local)
 │   ├── template_loader.py    # Official template parser
 │   ├── tools/                # Agent tools (playbook_rag, file_operations)
 │   ├── factory/              # Multi-agent patterns (6 patterns)
@@ -40,7 +41,7 @@ ai-project-playbook/
 │   ├── meta_learning/        # Pattern capture & recommendations
 │   └── supabase_client.py    # Database operations
 ├── mcp_server/
-│   └── playbook_mcp.py       # MCP Server (33 tools)
+│   └── playbook_mcp.py       # MCP Server (37 tools)
 ├── playbook/                 # Methodology content (63 markdown files)
 ├── supabase/
 │   ├── schema.sql            # Database schema
@@ -173,8 +174,19 @@ Main tables:
 - `teams` - Team information
 - `team_members` - User-team associations
 - `projects` - Project state and artifacts
-- `lessons_learned` - Shared knowledge base
+- `lessons_learned` - Shared knowledge base (with pgvector embeddings for semantic search)
 - `project_outcomes` - Completed project data
+
+### Semantic Search (pgvector)
+
+Lessons have 512-dim embeddings for semantic similarity search:
+- Extension: `vector` (pgvector)
+- Column: `lessons_learned.embedding vector(512)`
+- Index: IVFFlat with cosine distance (lists=10)
+- RPC: `match_lessons(query_embedding, match_team_id, match_threshold, match_count)`
+- Migration: `supabase/migrations/003_add_lesson_embeddings.sql`
+- Embedding backends: OpenAI (`text-embedding-3-small`) > Voyage AI (`voyage-3-lite`) > local (`all-MiniLM-L6-v2`)
+- New lessons get embeddings automatically on creation
 
 ### Row Level Security
 
@@ -273,12 +285,13 @@ refactor: Restructure code
 
 ## Current State
 
-- **33 MCP Tools** functional
+- **37 MCP Tools** functional
 - **Archie**: Core Soul + 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 - **Supabase** integration complete
+- **Semantic search** via pgvector embeddings (hybrid retrieval: semantic + keyword)
 - **Project sync** between team members
 - **Repository linking** for projects
-- **Meta-learning** from completed projects
+- **Meta-learning** from completed projects (lesson voting, cleanup, semantic search)
 - **CI protection** for Core Soul integrity
 
 ---

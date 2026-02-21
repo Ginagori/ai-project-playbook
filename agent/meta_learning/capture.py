@@ -332,16 +332,23 @@ def _get_completed_phases(project: ProjectState) -> list[str]:
 # Inspired by OpenClaw's auto-capture triggers
 # =============================================================================
 
-def auto_capture_phase_lesson(phase: str, project: ProjectState) -> list[LessonLearned]:
+def auto_capture_phase_lesson(
+    phase: str,
+    project: ProjectState,
+    supabase_client: object | None = None,
+) -> list[LessonLearned]:
     """
     Auto-capture lessons when completing a phase.
 
     Unlike capture_project_outcome() which runs at project end,
     this runs after each phase transition to capture incremental learning.
 
+    Saves to local JSON always, and also to Supabase if client is provided.
+
     Args:
         phase: The phase just completed (discovery, planning, roadmap, implementation, deployment)
         project: Current project state
+        supabase_client: Optional Supabase client for team sync
 
     Returns:
         List of lessons captured (also stored in DB)
@@ -465,10 +472,86 @@ def auto_capture_phase_lesson(phase: str, project: ProjectState) -> list[LessonL
                 tags=["deployment", scale, "auto-captured"],
             ))
 
-    # Store lessons in database
+    # Store lessons in local database
     if lessons:
-        db = get_lessons_db()
+        local_db = get_lessons_db()
         for lesson in lessons:
-            db.add_lesson(lesson)
+            local_db.add_lesson(lesson)
+
+    # Sync to Supabase if available (best-effort, non-blocking)
+    if lessons and supabase_client and getattr(supabase_client, "is_configured", False):
+        _sync_lessons_to_supabase(lessons, supabase_client)
 
     return lessons
+
+
+def _sync_lessons_to_supabase(
+    lessons: list[LessonLearned],
+    supabase_client: object,
+) -> None:
+    """Sync captured lessons to Supabase (best-effort, never crashes the pipeline).
+
+    Uses the synchronous Supabase client directly since auto_capture is called
+    from synchronous orchestrator nodes.
+    """
+    client = getattr(supabase_client, "client", None)
+    team_id = getattr(supabase_client, "team_id", None)
+    if not client or not team_id:
+        return
+
+    for lesson in lessons:
+        try:
+            # Skip very low confidence lessons (noise filtering)
+            if lesson.confidence < 0.4:
+                continue
+
+            data = {
+                "team_id": team_id,
+                "category": lesson.category.value,
+                "title": lesson.title,
+                "description": lesson.description,
+                "context": lesson.context,
+                "recommendation": lesson.recommendation,
+                "project_types": lesson.project_types,
+                "tech_stacks": lesson.tech_stacks,
+                "tags": lesson.tags,
+                "confidence": lesson.confidence,
+                "contributed_by": "archie-auto-capture",
+            }
+
+            # Generate embedding for semantic search (best-effort)
+            try:
+                from agent.embedding import generate_lesson_embedding
+                embedding = generate_lesson_embedding(
+                    lesson.title, lesson.description, lesson.recommendation,
+                )
+                if embedding:
+                    data["embedding"] = embedding
+            except Exception:
+                pass  # Embedding is optional
+
+            # Upsert: if lesson with same title+team exists, update it
+            # Otherwise insert new
+            existing = (
+                client.table("lessons_learned")
+                .select("id, frequency")
+                .eq("team_id", team_id)
+                .ilike("title", lesson.title)
+                .execute()
+            )
+
+            if existing.data:
+                # Update: increment frequency, update confidence
+                row = existing.data[0]
+                client.table("lessons_learned").update({
+                    "frequency": (row.get("frequency", 1) or 1) + 1,
+                    "confidence": lesson.confidence,
+                    "tech_stacks": lesson.tech_stacks,
+                    "tags": lesson.tags,
+                }).eq("id", row["id"]).execute()
+            else:
+                # Insert new
+                client.table("lessons_learned").insert(data).execute()
+
+        except Exception as e:
+            print(f"[Archie] Supabase sync for lesson '{lesson.title}' failed: {e}")

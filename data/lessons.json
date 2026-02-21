@@ -1,24 +1,6 @@
 {
   "lessons": [
     {
-      "id": "ae86b567-64f5-40a6-aec7-bfbdd1bca5e9",
-      "category": "testing",
-      "title": "Test Lesson",
-      "description": "Testing the meta-learning system",
-      "context": "Manually added lesson",
-      "recommendation": "Always test your features",
-      "confidence": 0.7,
-      "frequency": 1,
-      "project_types": [],
-      "tech_stacks": [],
-      "tags": [
-        "test",
-        "demo"
-      ],
-      "created_at": "2026-01-05T22:36:32.294954",
-      "updated_at": "2026-01-05T22:36:32.294954"
-    },
-    {
       "id": "df8c2437-66bf-4400-b3da-81d573b1a22a",
       "category": "architecture",
       "title": "Controlled Tabs for State Persistence",
@@ -27,10 +9,14 @@
       "recommendation": "Always use controlled Tabs when the tab content has forms or operations that modify state: `<Tabs value={activeTab} onValueChange={setActiveTab}>` instead of `<Tabs defaultValue=\"tab1\">`. This ensures the tab position is preserved after save operations, modal closures, or data refreshes.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 1,
+      "downvotes": 1,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "react",
         "shadcn",
@@ -39,7 +25,7 @@
         "state-management"
       ],
       "created_at": "2026-01-09T03:31:45.279344",
-      "updated_at": "2026-01-09T03:31:45.279344"
+      "updated_at": "2026-02-21T00:17:18.058563"
     },
     {
       "id": "8a24dc22-1db1-4127-9276-4b6950f66689",
@@ -50,10 +36,15 @@
       "recommendation": "Always create a helper function to safely handle Supabase nested data: `const getData = (obj: any) => Array.isArray(obj) ? obj[0] : obj;` Then use it when accessing nested relations: `const empleadoData = getData(perfil.empleado);`. This handles both array and object responses gracefully.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "postgresql-supabase",
+        "react-vite"
+      ],
       "tags": [
         "supabase",
         "typescript",
@@ -72,10 +63,14 @@
       "recommendation": "When building role-based dropdowns from user profiles with complex joins, fetch the data with explicit relation syntax and transform it in the frontend: Query with `.select('id, empleado:empleados(nombre), configuracion_personal').eq('rol', 'instructor')`, then map to a clean interface `{id, nombre, email}`. Store the instructor info in a JSONB field (like firmas_requeridas) rather than a foreign key if the instructor data needs to be preserved as a snapshot at the time of creation.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "postgresql-supabase"
+      ],
       "tags": [
         "supabase",
         "rbac",
@@ -95,10 +90,14 @@
       "recommendation": "Internationalization (i18n) should be decided and implemented from the project start, not added later. If multi-language is a potential requirement, set up the i18n infrastructure early (react-i18next or similar) and use translation keys from day one. Retrofitting i18n is expensive and disruptive. When clients request it mid-project, clearly communicate the scope: every hardcoded string must be replaced, which affects all components.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "i18n",
         "planning",
@@ -117,10 +116,14 @@
       "recommendation": "For edit forms, store both `formData` and `originalData` states. Create a `getChangedFields()` function that compares them and returns only modified fields. Before saving: 1) Check if any fields changed, 2) Show \"No changes detected\" if nothing changed, 3) Only send changed fields to the API. Also show users feedback like \"2 campos modificados\" to confirm what was updated.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "forms",
         "crud",
@@ -137,13 +140,17 @@
       "title": "Supabase Error Codes for Constraint Violations",
       "description": "When implementing CRUD operations for categories that could be referenced by other tables (capacitaciones), we needed to handle database constraint violations gracefully. Supabase/PostgreSQL returns specific error codes: 23505 for unique constraint violations (duplicate entries) and 23503 for foreign key violations (trying to delete a referenced record).",
       "context": "Manually added lesson",
-      "recommendation": "Always handle these PostgreSQL error codes in your CRUD operations: `if (error.code === '23505')` for duplicates (show \"Ya existe un registro con ese nombre\"), `if (error.code === '23503')` for FK violations (show \"No se puede eliminar, est\u00e1 siendo usado por otros registros\"). This provides user-friendly error messages instead of generic database errors.",
+      "recommendation": "Always handle these PostgreSQL error codes in your CRUD operations: `if (error.code === '23505')` for duplicates (show \"Ya existe un registro con ese nombre\"), `if (error.code === '23503')` for FK violations (show \"No se puede eliminar, está siendo usado por otros registros\"). This provides user-friendly error messages instead of generic database errors.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "postgresql-supabase"
+      ],
       "tags": [
         "supabase",
         "postgresql",
@@ -163,10 +170,14 @@
       "recommendation": "Use `supabase.auth.updateUser({ password: newPassword })` for authenticated users to change their password. This doesn't require the old password, making it ideal for temporary password flows. Always validate: minimum length (6+ chars), password confirmation match. Provide show/hide password toggles for better UX. Reset the form and close the modal on success.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "postgresql-supabase"
+      ],
       "tags": [
         "supabase",
         "authentication",
@@ -185,6 +196,8 @@
       "recommendation": "For admin configuration pages, use a tabbed interface to organize related settings: 1) Users tab - user CRUD with role-based creation, 2) System tab - key-value settings stored in a configuracion_sistema table, plus entity management (categories), 3) Alerts tab - threshold configurations. Use a single \"Save Changes\" button in the header for system settings, but immediate save for entity CRUD (users, categories). Store system config as key-value pairs in DB for flexibility.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -203,11 +216,13 @@
       "id": "e46da59f-3bb7-4dc6-8fcf-62bc91104a26",
       "category": "workflow",
       "title": "Estructura de Propuesta Comercial Pre-Venta",
-      "description": "Se desarroll\u00f3 un proceso estructurado para generar propuestas comerciales a partir de reuniones exploratorias con clientes. El flujo incluye: 1) Transcripci\u00f3n de reuni\u00f3n exploratoria, 2) Documento de Requerimientos Funcionales (detalle interno con IDs, prioridades Alta/Media/Baja, m\u00f3dulos separados), 3) Propuesta T\u00e9cnica (stack, arquitectura, fases de desarrollo, sin mencionar uso interno de IA), 4) Propuesta Econ\u00f3mica (monto total sin desglose por m\u00f3dulo, plan de pagos DTaaS cuando el presupuesto del cliente es limitado), 5) Propuesta Comercial Final consolidada para el cliente. Importante: los costos variables (dominio, correos) no se inventan, se indica \"seg\u00fan proveedor\".",
+      "description": "Se desarrolló un proceso estructurado para generar propuestas comerciales a partir de reuniones exploratorias con clientes. El flujo incluye: 1) Transcripción de reunión exploratoria, 2) Documento de Requerimientos Funcionales (detalle interno con IDs, prioridades Alta/Media/Baja, módulos separados), 3) Propuesta Técnica (stack, arquitectura, fases de desarrollo, sin mencionar uso interno de IA), 4) Propuesta Económica (monto total sin desglose por módulo, plan de pagos DTaaS cuando el presupuesto del cliente es limitado), 5) Propuesta Comercial Final consolidada para el cliente. Importante: los costos variables (dominio, correos) no se inventan, se indica \"según proveedor\".",
       "context": "Manually added lesson",
-      "recommendation": "Para pre-ventas futuras seguir esta estructura de 5 documentos: 01-requerimientos-funcionales.md (interno, detallado), 02-propuesta-tecnica.md (stack y arquitectura), 03-propuesta-economica.md (interno, con proyecciones), PROPUESTA-COMERCIAL-[CLIENTE].md (para el cliente, consolidado). Usar esquema Anticipo + DTaaS cuando el cliente tiene presupuesto limitado pero fondos iniciales. No desglosar costos por m\u00f3dulo al cliente. Convertir a .docx con pandoc para entrega final.",
+      "recommendation": "Para pre-ventas futuras seguir esta estructura de 5 documentos: 01-requerimientos-funcionales.md (interno, detallado), 02-propuesta-tecnica.md (stack y arquitectura), 03-propuesta-economica.md (interno, con proyecciones), PROPUESTA-COMERCIAL-[CLIENTE].md (para el cliente, consolidado). Usar esquema Anticipo + DTaaS cuando el cliente tiene presupuesto limitado pero fondos iniciales. No desglosar costos por módulo al cliente. Convertir a .docx con pandoc para entrega final.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -225,12 +240,14 @@
     {
       "id": "28add822-45a5-49c0-bf49-9492891762f3",
       "category": "architecture",
-      "title": "CLI Agent con Sistema de Dise\u00f1o Embebido",
-      "description": "Para crear un agente de generaci\u00f3n de UI tipo Lovable, es cr\u00edtico embeber todo el conocimiento de dise\u00f1o (visual hierarchy, spacing, color systems, UI patterns, accessibility) directamente en el system prompt del agente. Esto permite que usuarios no t\u00e9cnicos obtengan resultados profesionales.",
+      "title": "CLI Agent con Sistema de Diseño Embebido",
+      "description": "Para crear un agente de generación de UI tipo Lovable, es crítico embeber todo el conocimiento de diseño (visual hierarchy, spacing, color systems, UI patterns, accessibility) directamente en el system prompt del agente. Esto permite que usuarios no técnicos obtengan resultados profesionales.",
       "context": "Manually added lesson",
-      "recommendation": "Crear un m\u00f3dulo de prompts separado (ej: design-system.ts) que contenga: 1) Principios de dise\u00f1o (8pt grid, color theory, typography scale), 2) Patrones UI comunes con c\u00f3digo, 3) Reglas de accesibilidad, 4) Snippets de componentes listos. Importar y componer en el system prompt del agente.",
+      "recommendation": "Crear un módulo de prompts separado (ej: design-system.ts) que contenga: 1) Principios de diseño (8pt grid, color theory, typography scale), 2) Patrones UI comunes con código, 3) Reglas de accesibilidad, 4) Snippets de componentes listos. Importar y componer en el system prompt del agente.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -254,10 +271,14 @@
       "recommendation": "For shareable MCP servers: 1) Add \"bin\" field in package.json mapping command name to dist/server.js, 2) Add shebang to TypeScript source, 3) Create install scripts for both Windows (.ps1) and Unix (.sh), 4) Use npm link after build to make globally available. Document the setup in SETUP.md for team members.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "mcp",
         "npm",
@@ -274,9 +295,11 @@
       "title": "Agent Integration via Shared Context Files",
       "description": "Two independent agents (Playbook and UI Agent) were integrated by having one agent generate context files (CLAUDE.md, PRD.md, session.json) that the other agent automatically detects and reads. This creates a loose coupling where agents don't need direct communication - they communicate through the filesystem. The UI Agent checks for these files on startup and adjusts its behavior accordingly.",
       "context": "Manually added lesson",
-      "recommendation": "For multi-agent integration: 1) Define a clear contract of files one agent produces (CLAUDE.md for rules, PRD.md for requirements), 2) Have the consuming agent auto-detect these files in the project directory, 3) Extract relevant context (tech stack, conventions) and inject into prompts, 4) Show user feedback when context is detected (\"\u2139 Playbook context detected\"). This pattern enables agents to work together without tight coupling.",
+      "recommendation": "For multi-agent integration: 1) Define a clear contract of files one agent produces (CLAUDE.md for rules, PRD.md for requirements), 2) Have the consuming agent auto-detect these files in the project directory, 3) Extract relevant context (tech stack, conventions) and inject into prompts, 4) Show user feedback when context is detected (\"ℹ Playbook context detected\"). This pattern enables agents to work together without tight coupling.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "multi_agent"
       ],
@@ -300,6 +323,8 @@
       "recommendation": "When integrating agents: 1) Update both READMEs with integration section, 2) Update both CLAUDE.md files so agents know about each other, 3) Include installation instructions for the partner agent, 4) Add GitHub links in both directions, 5) Commit and push to both repos. Users discovering either agent will learn about the integration.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "multi_agent"
       ],
@@ -320,9 +345,11 @@
       "title": "Claude MAX Subscription Simplifies Setup",
       "description": "Teams using Claude MAX subscription don't need to configure ANTHROPIC_API_KEY for agents that work within Claude Code. This significantly simplifies onboarding - no API key management, no .env files for API keys, no billing concerns per team member. The agent just works through Claude Code's existing authentication.",
       "context": "Manually added lesson",
-      "recommendation": "For teams with Claude MAX: 1) Remove API key setup steps from documentation, 2) Don't require .env files for Anthropic credentials, 3) Simplify SETUP.md to just installation + MCP configuration, 4) Mention \"Con suscripci\u00f3n MAX no necesitas configurar API keys\" explicitly. This reduces friction for team adoption.",
+      "recommendation": "For teams with Claude MAX: 1) Remove API key setup steps from documentation, 2) Don't require .env files for Anthropic credentials, 3) Simplify SETUP.md to just installation + MCP configuration, 4) Mention \"Con suscripción MAX no necesitas configurar API keys\" explicitly. This reduces friction for team adoption.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -346,10 +373,14 @@
       "recommendation": "For unused but required variables in TypeScript: 1) Prefix with underscore: _unusedVar, 2) If the variable might be used later, add a method that references it (like isConfigured() for _config), 3) This is cleaner than @ts-ignore comments, 4) Works for destructured parameters: ({ used, unused: _unused }) => {}",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "api"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "typescript",
         "unused-variables",
@@ -369,6 +400,8 @@
       "recommendation": "When encountering \"invalid path 'nul'\" error: 1) Don't use 'git add -A' or 'git add .', 2) Instead, add specific files/folders: 'git add folder1 folder2 file.txt', 3) The 'nul' file cannot be deleted normally in Windows - may need special commands, 4) Add 'nul' to .gitignore to prevent future issues.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "api"
       ],
@@ -392,6 +425,8 @@
       "recommendation": "To add MCP server to Claude Code: 1) Option A: 'claude mcp add server-name --command \"command --args\"', 2) Option B: Edit ~/.claude.json manually in mcpServers section, 3) For global npm commands, use full path on Windows (C:\\\\Users\\\\user\\\\AppData\\\\Roaming\\\\npm\\\\command.cmd), 4) Always restart Claude Code after changes, 5) Verify in \"Manage MCP Servers\" panel shows \"connected\".",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -415,6 +450,8 @@
       "recommendation": "For agents that need context: 1) Create async factory function: createAgent(options) that returns Promise<Agent>, 2) Inside factory, detect and load context files, 3) Call agent.setContext() before returning, 4) Replace all 'new Agent()' calls with 'await createAgent()', 5) This centralizes context loading and makes it automatic for all commands (chat, generate, modify, etc.).",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -432,12 +469,14 @@
     {
       "id": "e07191cf-1067-4c8c-9daf-090fec5670ea",
       "category": "workflow",
-      "title": "B\u00fasquedas deben ser insensibles a acentos",
-      "description": "En aplicaciones en espa\u00f1ol, los usuarios buscan sin tildes (ej: \"acido\" en lugar de \"\u00c1cido\", \"clinica\" en lugar de \"Cl\u00ednica\"). Las b\u00fasquedas que solo usan toLowerCase() fallan al no encontrar coincidencias.",
+      "title": "Búsquedas deben ser insensibles a acentos",
+      "description": "En aplicaciones en español, los usuarios buscan sin tildes (ej: \"acido\" en lugar de \"Ácido\", \"clinica\" en lugar de \"Clínica\"). Las búsquedas que solo usan toLowerCase() fallan al no encontrar coincidencias.",
       "context": "Manually added lesson",
-      "recommendation": "Siempre implementar normalizaci\u00f3n de texto en b\u00fasquedas usando: text.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, ''). Esto elimina tildes y diacr\u00edticos permitiendo b\u00fasquedas flexibles.",
+      "recommendation": "Siempre implementar normalización de texto en búsquedas usando: text.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, ''). Esto elimina tildes y diacríticos permitiendo búsquedas flexibles.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -457,11 +496,13 @@
       "id": "06a61c68-0769-4503-b88a-7f524893877a",
       "category": "architecture",
       "title": "Filtros de tabla deben usar grid, no flexbox",
-      "description": "Usar flex-1 para campos de b\u00fasqueda y anchos fijos para selects causa desbordamiento cuando los nombres son largos. Los SelectContent se desbordan del contenedor.",
+      "description": "Usar flex-1 para campos de búsqueda y anchos fijos para selects causa desbordamiento cuando los nombres son largos. Los SelectContent se desbordan del contenedor.",
       "context": "Manually added lesson",
-      "recommendation": "Usar grid con distribuci\u00f3n controlada: grid-cols-1 sm:grid-cols-2 lg:grid-cols-4. B\u00fasqueda ocupa 2 columnas (sm:col-span-2), filtros 1 columna cada uno. Agregar max-h-[300px] a SelectContent para limitar altura del dropdown.",
+      "recommendation": "Usar grid con distribución controlada: grid-cols-1 sm:grid-cols-2 lg:grid-cols-4. Búsqueda ocupa 2 columnas (sm:col-span-2), filtros 1 columna cada uno. Agregar max-h-[300px] a SelectContent para limitar altura del dropdown.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -480,12 +521,14 @@
     {
       "id": "8c1d2086-6e38-4c9e-b27b-c53ea389e819",
       "category": "workflow",
-      "title": "Campos obligatorios deben validarse antes de env\u00edo",
-      "description": "En formularios donde un campo es cr\u00edtico para el negocio (ej: cliente en salidas de inventario), permitir env\u00edo sin ese campo causa datos incompletos.",
+      "title": "Campos obligatorios deben validarse antes de envío",
+      "description": "En formularios donde un campo es crítico para el negocio (ej: cliente en salidas de inventario), permitir envío sin ese campo causa datos incompletos.",
       "context": "Manually added lesson",
-      "recommendation": "1) Agregar validaci\u00f3n expl\u00edcita en handleSubmit con mensaje de error claro. 2) Marcar el label con asterisco (*). 3) Remover opciones como \"Sin cliente espec\u00edfico\" si el campo es obligatorio.",
+      "recommendation": "1) Agregar validación explícita en handleSubmit con mensaje de error claro. 2) Marcar el label con asterisco (*). 3) Remover opciones como \"Sin cliente específico\" si el campo es obligatorio.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -502,12 +545,14 @@
     {
       "id": "9aa97ad2-b9b5-48bb-be5d-a088e0aa3577",
       "category": "architecture",
-      "title": "P\u00e1ginas de detalle deben agrupar informaci\u00f3n relacionada",
-      "description": "Crear m\u00faltiples cards peque\u00f1as para cada campo (ej: una card solo para \"Responsable\") desperdicia espacio y fragmenta la informaci\u00f3n. El usuario debe scrollear innecesariamente.",
+      "title": "Páginas de detalle deben agrupar información relacionada",
+      "description": "Crear múltiples cards pequeñas para cada campo (ej: una card solo para \"Responsable\") desperdicia espacio y fragmenta la información. El usuario debe scrollear innecesariamente.",
       "context": "Manually added lesson",
-      "recommendation": "Agrupar informaci\u00f3n relacionada en 2-3 secciones principales usando grids internos. Ej: \"Informaci\u00f3n de la Salida\" (producto, cantidad, fecha, costo, responsable) y \"Cliente/Ubicaci\u00f3n\" (nombre, ubicaci\u00f3n, contacto). Usar grid-cols-2 o grid-cols-3 dentro de cada card.",
+      "recommendation": "Agrupar información relacionada en 2-3 secciones principales usando grids internos. Ej: \"Información de la Salida\" (producto, cantidad, fecha, costo, responsable) y \"Cliente/Ubicación\" (nombre, ubicación, contacto). Usar grid-cols-2 o grid-cols-3 dentro de cada card.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -528,13 +573,17 @@
       "title": "Eliminar campos no utilizados de la base de datos y UI",
       "description": "Mantener campos como \"tipo_trabajo\" que ya no son relevantes para el negocio confunde al usuario y ocupa espacio innecesario en formularios y tablas.",
       "context": "Manually added lesson",
-      "recommendation": "Cuando un campo deja de ser relevante: 1) Eliminar de la UI (formularios, tablas, p\u00e1ginas de detalle). 2) Eliminar columna de la BD con ALTER TABLE DROP COLUMN. 3) Actualizar tipos TypeScript. 4) Remover imports de constantes relacionadas.",
+      "recommendation": "Cuando un campo deja de ser relevante: 1) Eliminar de la UI (formularios, tablas, páginas de detalle). 2) Eliminar columna de la BD con ALTER TABLE DROP COLUMN. 3) Actualizar tipos TypeScript. 4) Remover imports de constantes relacionadas.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "ui",
         "database",
@@ -548,11 +597,13 @@
       "id": "87e19c21-09e0-487b-ba6e-1187a32311a7",
       "category": "architecture",
       "title": "Costos de salida deben calcularse con precio promedio ponderado",
-      "description": "En sistemas de inventario, las salidas necesitan un costo asociado para reportes financieros. Sin c\u00e1lculo autom\u00e1tico, el usuario debe ingresar manualmente o el dato queda vac\u00edo.",
+      "description": "En sistemas de inventario, las salidas necesitan un costo asociado para reportes financieros. Sin cálculo automático, el usuario debe ingresar manualmente o el dato queda vacío.",
       "context": "Manually added lesson",
-      "recommendation": "Implementar c\u00e1lculo autom\u00e1tico de costo usando precio_promedio del producto: costo_total = cantidad * precio_promedio. Mostrar el costo calculado en tiempo real en el formulario. Guardar tanto costo_unitario como costo_total en la BD.",
+      "recommendation": "Implementar cálculo automático de costo usando precio_promedio del producto: costo_total = cantidad * precio_promedio. Mostrar el costo calculado en tiempo real en el formulario. Guardar tanto costo_unitario como costo_total en la BD.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -569,12 +620,14 @@
     {
       "id": "b8e27396-646e-422c-8bf5-baf2ab96e17d",
       "category": "workflow",
-      "title": "Alineaci\u00f3n de columnas en tablas debe ser consistente",
-      "description": "Columnas con datos num\u00e9ricos o de acciones alineadas a la izquierda dificultan la lectura y comparaci\u00f3n de valores.",
+      "title": "Alineación de columnas en tablas debe ser consistente",
+      "description": "Columnas con datos numéricos o de acciones alineadas a la izquierda dificultan la lectura y comparación de valores.",
       "context": "Manually added lesson",
       "recommendation": "Alinear al centro: Fecha, Cantidad, Costo, Responsable, Acciones. Alinear a la izquierda: Producto, Cliente/Proveedor (textos largos). Usar clases text-center en TableHead y TableCell correspondientes.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -591,12 +644,14 @@
     {
       "id": "90abbc1e-2ac6-42db-8812-5f335e8cd195",
       "category": "workflow",
-      "title": "Capitalizaci\u00f3n autom\u00e1tica de nombres propios",
-      "description": "Usuarios ingresan nombres en may\u00fasculas (JUAN PEREZ) o min\u00fasculas (juan perez), causando inconsistencia en la base de datos y reportes.",
+      "title": "Capitalización automática de nombres propios",
+      "description": "Usuarios ingresan nombres en mayúsculas (JUAN PEREZ) o minúsculas (juan perez), causando inconsistencia en la base de datos y reportes.",
       "context": "Manually added lesson",
-      "recommendation": "Implementar funci\u00f3n toTitleCase que capitalice primera letra de cada palabra. Aplicar al guardar en BD: nombre: toTitleCase(editNombre.trim()). Manejar excepciones como \"de\", \"del\", \"la\" que deben permanecer en min\u00fasculas.",
+      "recommendation": "Implementar función toTitleCase que capitalice primera letra de cada palabra. Aplicar al guardar en BD: nombre: toTitleCase(editNombre.trim()). Manejar excepciones como \"de\", \"del\", \"la\" que deben permanecer en minúsculas.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -614,11 +669,13 @@
       "id": "84da19b2-e6d8-4832-b916-c829dad1dca7",
       "category": "architecture",
       "title": "Selects de proveedores deben filtrar por producto",
-      "description": "Mostrar todos los proveedores del sistema cuando el usuario selecciona un producto es confuso. Solo deben aparecer los proveedores asociados a ese producto espec\u00edfico.",
+      "description": "Mostrar todos los proveedores del sistema cuando el usuario selecciona un producto es confuso. Solo deben aparecer los proveedores asociados a ese producto específico.",
       "context": "Manually added lesson",
-      "recommendation": "1) Cargar proveedores din\u00e1micamente cuando cambia el producto usando useEffect. 2) Consultar tabla productos_proveedores filtrada por producto_id. 3) Pre-seleccionar el proveedor principal (es_principal=true). 4) Mostrar precio del proveedor junto al nombre.",
+      "recommendation": "1) Cargar proveedores dinámicamente cuando cambia el producto usando useEffect. 2) Consultar tabla productos_proveedores filtrada por producto_id. 3) Pre-seleccionar el proveedor principal (es_principal=true). 4) Mostrar precio del proveedor junto al nombre.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -635,12 +692,14 @@
     {
       "id": "58db03f6-490a-427c-ab07-8e024a0eaa3a",
       "category": "workflow",
-      "title": "Placeholders de b\u00fasqueda deben ser cortos",
-      "description": "Placeholders largos como \"Buscar por producto, cliente, responsable o remisi\u00f3n...\" se truncan en m\u00f3vil y ocupan espacio visual innecesario.",
+      "title": "Placeholders de búsqueda deben ser cortos",
+      "description": "Placeholders largos como \"Buscar por producto, cliente, responsable o remisión...\" se truncan en móvil y ocupan espacio visual innecesario.",
       "context": "Manually added lesson",
-      "recommendation": "Usar placeholder simple: \"Buscar...\" El usuario descubrir\u00e1 qu\u00e9 campos son buscables al usar la funci\u00f3n. Si es necesario aclarar, usar un tooltip o texto de ayuda debajo del campo.",
+      "recommendation": "Usar placeholder simple: \"Buscar...\" El usuario descubrirá qué campos son buscables al usar la función. Si es necesario aclarar, usar un tooltip o texto de ayuda debajo del campo.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -658,16 +717,20 @@
     {
       "id": "5052da52-367e-4ed4-ae73-78a6ad75948d",
       "category": "architecture",
-      "title": "Patr\u00f3n Sobrio para Cards de Estad\u00edsticas",
-      "description": "Al dise\u00f1ar dashboards con m\u00faltiples cards de estad\u00edsticas, usar colores neutros por defecto (bg-muted) con colores vivos solo al hacer hover crea una interfaz m\u00e1s limpia y profesional. Los colores fijos se reservan para valores sem\u00e1nticamente importantes (ej: verde para ventas/ingresos, rojo para costos).",
+      "title": "Patrón Sobrio para Cards de Estadísticas",
+      "description": "Al diseñar dashboards con múltiples cards de estadísticas, usar colores neutros por defecto (bg-muted) con colores vivos solo al hacer hover crea una interfaz más limpia y profesional. Los colores fijos se reservan para valores semánticamente importantes (ej: verde para ventas/ingresos, rojo para costos).",
       "context": "Manually added lesson",
-      "recommendation": "Implementar patr\u00f3n sobrio con Tailwind: className=\"group\" en Card, bg-muted group-hover:bg-{color}-100 en el icono container, text-muted-foreground group-hover:text-{color}-600 en iconos y valores. Usar colores fijos solo para m\u00e9tricas que siempre representan lo mismo (ingresos=verde, costos=rojo).",
+      "recommendation": "Implementar patrón sobrio con Tailwind: className=\"group\" en Card, bg-muted group-hover:bg-{color}-100 en el icono container, text-muted-foreground group-hover:text-{color}-600 en iconos y valores. Usar colores fijos solo para métricas que siempre representan lo mismo (ingresos=verde, costos=rojo).",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "ui",
         "ux",
@@ -682,12 +745,14 @@
     {
       "id": "e03eb7cf-0beb-406e-8622-77e9f9c8d43b",
       "category": "tooling",
-      "title": "XLSX vs CSV para Exportaci\u00f3n de Reportes",
-      "description": "Los usuarios prefieren Excel (.xlsx) sobre CSV porque: 1) Mantiene formato de columnas con anchos configurables, 2) Soporta m\u00faltiples hojas en un archivo, 3) Mejor manejo de caracteres especiales y acentos, 4) Compatible directamente con Excel sin necesidad de importar.",
+      "title": "XLSX vs CSV para Exportación de Reportes",
+      "description": "Los usuarios prefieren Excel (.xlsx) sobre CSV porque: 1) Mantiene formato de columnas con anchos configurables, 2) Soporta múltiples hojas en un archivo, 3) Mejor manejo de caracteres especiales y acentos, 4) Compatible directamente con Excel sin necesidad de importar.",
       "context": "Manually added lesson",
-      "recommendation": "Usar librer\u00eda 'xlsx' para exportaci\u00f3n. Configurar worksheet['!cols'] con anchos apropiados para cada columna. Nombrar archivos con fecha ISO (reporte_YYYY-MM-DD.xlsx). Incluir fila de totales cuando aplique.",
+      "recommendation": "Usar librería 'xlsx' para exportación. Configurar worksheet['!cols'] con anchos apropiados para cada columna. Nombrar archivos con fecha ISO (reporte_YYYY-MM-DD.xlsx). Incluir fila de totales cuando aplique.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -706,11 +771,13 @@
       "id": "64987912-e188-4564-ab65-78933f1355c3",
       "category": "architecture",
       "title": "Layout Flexible para Filtros de Reportes",
-      "description": "En reportes con m\u00faltiples filtros, el campo de b\u00fasqueda debe ser flexible (flex-1 min-w-[280px]) mientras que los selectores deben tener ancho fijo (w-[180px]) para mantener consistencia visual y evitar que el layout salte al cambiar valores.",
+      "description": "En reportes con múltiples filtros, el campo de búsqueda debe ser flexible (flex-1 min-w-[280px]) mientras que los selectores deben tener ancho fijo (w-[180px]) para mantener consistencia visual y evitar que el layout salte al cambiar valores.",
       "context": "Manually added lesson",
-      "recommendation": "Usar flex flex-wrap items-center gap-4 como contenedor. Input de b\u00fasqueda con flex-1 min-w-[280px]. Selects con ancho fijo w-[180px]. Bot\u00f3n de exportar/acci\u00f3n al final. Esto asegura que el layout funcione en desktop y mobile.",
+      "recommendation": "Usar flex flex-wrap items-center gap-4 como contenedor. Input de búsqueda con flex-1 min-w-[280px]. Selects con ancho fijo w-[180px]. Botón de exportar/acción al final. Esto asegura que el layout funcione en desktop y mobile.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -734,6 +801,8 @@
       "recommendation": "Ser EXTREMADAMENTE explicito en el SYSTEM_PROMPT: usar REGLA FUNDAMENTAL: UN SOLO PASO POR MENSAJE. NUNCA combines pasos. Definir cada paso con CONDICION de activacion y RESPUESTA OBLIGATORIA exacta. Incluir ejemplos CORRECTOS e INCORRECTOS.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -756,6 +825,8 @@
       "recommendation": "Agregar regla explicita de ESCUCHA ACTIVA en el SYSTEM_PROMPT: ANTES de responder, LEE el mensaje del usuario e IDENTIFICA: 1) Su profesion o tipo de negocio, 2) Los problemas ESPECIFICOS que menciona. Incluir ejemplo INCORRECTO (NUNCA HAGAS ESTO) con caso real.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -778,6 +849,8 @@
       "recommendation": "Agregar REGLA DE PLACEHOLDERS explicita: NUNCA escribas [Dia 1], [Hora 1] ni ningun placeholder con corchetes. Si no tienes fechas reales, usa ejemplos como 'martes 28 de enero'. Inyectar contexto real del calendario en el prompt cuando sea posible.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -800,6 +873,8 @@
       "recommendation": "Agregar dos parametros clave al crear eventos: 1) responseRequested: true en el body del evento, 2) params={'sendUpdates': 'all'} en el query string del POST. Ejemplo: client.post(url, json=event_data, params={'sendUpdates': 'all'})",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -822,10 +897,14 @@
       "recommendation": "Al debuggear CORS, SIEMPRE revisar: 1) El codigo de configuracion, 2) El archivo .env que puede sobreescribir valores. Asegurar que CORS_ORIGINS en .env incluya TODOS los puertos de desarrollo (3000, 3001, 3002) y dominios de produccion.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "api"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "fastapi"
+      ],
       "tags": [
         "cors",
         "fastapi",
@@ -844,6 +923,8 @@
       "recommendation": "Flujo de 5 pasos: 1) Proponer reunion sin fechas, esperar SI. 2) Pedir aceptacion de politica de datos con link, esperar 'acepto'. 3) Ofrecer 2 dias concretos. Si rechaza, ofrecer 2 mas. Si sigue rechazando, preguntar abiertamente. 4) Ofrecer 3 horarios del dia elegido. 5) Capturar nombre, email, empresa. 6) Confirmar y crear evento.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -867,10 +948,14 @@
       "recommendation": "Usar monorepo con carpetas separadas: web/ para landing publica y dashboard/ para panel admin. Cada uno tiene su propio package.json y configuracion. Netlify soporta esto con configuracion por sitio apuntando al mismo repo pero diferente base directory. Mantiene el codigo organizado y permite deploys independientes.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "nextjs"
+      ],
       "tags": [
         "nextjs",
         "monorepo",
@@ -890,6 +975,8 @@
       "recommendation": "Usar OpenRouter como capa de abstraccion. Permite cambiar entre Claude, GPT-4, Llama, etc. con solo cambiar una variable de entorno (DEFAULT_MODEL). El codigo permanece identico. Configurar: OPENROUTER_API_KEY, OPENROUTER_BASE_URL, DEFAULT_MODEL (ej: anthropic/claude-sonnet-4).",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -913,10 +1000,15 @@
       "recommendation": "Usar Supabase como backend-as-a-service: 1) Auth integrado con Next.js middleware para proteger rutas, 2) PostgreSQL para datos estructurados (conversations, messages, leads, insights), 3) Row Level Security para multi-tenancy, 4) Realtime opcional para actualizaciones en vivo. Separar SUPABASE_ANON_KEY (frontend) de SUPABASE_SERVICE_KEY (backend).",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "nextjs",
+        "postgresql-supabase"
+      ],
       "tags": [
         "supabase",
         "postgresql",
@@ -936,6 +1028,8 @@
       "recommendation": "Implementar pipeline de extraccion: 1) Guardar conversaciones en DB (conversations + messages tables), 2) Crear tabla conversation_insights con campos estructurados (industry, business_type, pain_points[], objections[], interest_level), 3) Usar LLM para analizar conversaciones con 4+ mensajes y extraer insights en JSON, 4) Crear endpoints API para estadisticas (/insights/stats, /pain-points, /objections, /by-industry), 5) Visualizar en dashboard para mejorar el agente.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -959,10 +1053,14 @@
       "recommendation": "Crear UNA sola instancia del chat widget a nivel de layout o pagina principal. Usar estado global o contexto para controlar apertura/cierre. Los botones CTA en diferentes secciones solo deben disparar la apertura del chat existente, no crear nuevas instancias. Opcionalmente, pasar un mensaje inicial al abrir (autoSendMessage prop) para contextualizar la conversacion.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "chat-widget",
         "react",
@@ -982,10 +1080,14 @@
       "recommendation": "Usar FastAPI con estructura modular: api/src/agents/ para logica de agentes, api/src/services/ para integraciones externas, api/src/api/routes/ para endpoints. Usar 'uv' como package manager (10-100x mas rapido que pip). Comando de desarrollo: uv run uvicorn src.main:app --reload. Swagger docs automatico en /docs. Type hints obligatorios en todas las funciones.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "api"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "fastapi"
+      ],
       "tags": [
         "fastapi",
         "python",
@@ -1005,10 +1107,14 @@
       "recommendation": "Definir colores de marca en tailwind.config.js como variables semanticas: nivanta-primary (#0C5469), nivanta-secondary (#0A9A97), nivanta-gray (#696969). Documentar en CLAUDE.md o design-system.md el uso de cada color. Usar siempre las variables semanticas (bg-nivanta-primary) en vez de colores genericos (bg-teal-600). Incluir tipografia (Montserrat) y espaciado consistente.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "react-vite"
+      ],
       "tags": [
         "tailwind",
         "design-system",
@@ -1028,6 +1134,8 @@
       "recommendation": "Crear CLAUDE.md en la raiz del proyecto con: 1) Descripcion y objetivos, 2) Stack tecnologico, 3) Arquitectura de carpetas, 4) Variables de entorno requeridas, 5) Comandos de desarrollo, 6) Convenciones de codigo, 7) Instrucciones de deploy. Mantenerlo actualizado con cada feature nueva. El asistente IA lo lee automaticamente y tiene contexto completo del proyecto.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -1050,10 +1158,15 @@
       "recommendation": "Configuracion optima: 1) Netlify para frontends - crear 2 sitios apuntando al mismo repo, cada uno con diferente base directory (web/ y dashboard/). 2) Railway para backend - especificar Root Directory: api y Start command: uvicorn src.main:app --host 0.0.0.0 --port $PORT. 3) Orden de deploy: primero API, luego frontends. 4) Actualizar NEXT_PUBLIC_API_URL en frontends para apuntar a URL de produccion de API.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "fastapi",
+        "nextjs"
+      ],
       "tags": [
         "netlify",
         "railway",
@@ -1073,10 +1186,15 @@
       "recommendation": "Usar middleware.ts en la raiz del proyecto dashboard. Verificar sesion de Supabase antes de cada request a rutas protegidas. Redirigir a /login si no hay sesion valida. Excluir rutas publicas (login, assets). Ejemplo: export const config = { matcher: ['/((?!login|_next/static|favicon.ico).*)'] }. Esto garantiza proteccion consistente sin modificar cada pagina.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
-      "tech_stacks": [],
+      "tech_stacks": [
+        "nextjs",
+        "postgresql-supabase"
+      ],
       "tags": [
         "nextjs",
         "middleware",
@@ -1096,6 +1214,8 @@
       "recommendation": "Usar patron de 2 pasos: 1) Crear evento en calendario PERSONAL del usuario con licencia Teams (isOnlineMeeting=true) para obtener el joinUrl, 2) Crear evento en SHARED MAILBOX con el Teams link incluido en el body HTML. Asi el email sale del shared mailbox pero el link de Teams funciona.",
       "confidence": 0.7,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "agent"
       ],
@@ -1120,6 +1240,8 @@
       "recommendation": "Consider nextjs + fastapi + postgresql-supabase for similar platform projects",
       "confidence": 0.65,
       "frequency": 2,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "platform"
       ],
@@ -1140,11 +1262,13 @@
       "id": "f8002834-88fa-4267-baa0-45096a85c9ab",
       "category": "tech_stack",
       "title": "Tech stack chosen: react-vite + fastapi + postgresql-supabase",
-      "description": "Selected react-vite + fastapi + postgresql-supabase for saas project: CUMPLE SST - Plataforma SaaS de gesti\u00f3n de Seguridad y Salud en el Trabajo para ",
+      "description": "Selected react-vite + fastapi + postgresql-supabase for saas project: CUMPLE SST - Plataforma SaaS de gestión de Seguridad y Salud en el Trabajo para ",
       "context": "Discovery phase for saas",
       "recommendation": "Consider react-vite + fastapi + postgresql-supabase for similar saas projects",
       "confidence": 0.8000000000000002,
       "frequency": 5,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -1166,10 +1290,12 @@
       "category": "architecture",
       "title": "Architecture: Vertical Slice Architecture",
       "description": "Used Vertical Slice Architecture for saas project",
-      "context": "Planning phase \u2014 architecture decision",
+      "context": "Planning phase — architecture decision",
       "recommendation": "Vertical Slice Architecture works well for saas projects",
       "confidence": 0.8000000000000002,
       "frequency": 4,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -1191,6 +1317,8 @@
       "recommendation": "Maintain detailed CLAUDE.md and PRD for better outcomes",
       "confidence": 0.8500000000000001,
       "frequency": 4,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [],
       "tech_stacks": [],
       "tags": [
@@ -1210,6 +1338,8 @@
       "recommendation": "A saas project typically needs 7 core features",
       "confidence": 0.6500000000000001,
       "frequency": 3,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -1231,6 +1361,8 @@
       "recommendation": "A saas project typically needs 10 core features",
       "confidence": 0.6000000000000001,
       "frequency": 2,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "saas"
       ],
@@ -1252,6 +1384,8 @@
       "recommendation": "A api project typically needs 5 core features",
       "confidence": 0.55,
       "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
       "project_types": [
         "api"
       ],

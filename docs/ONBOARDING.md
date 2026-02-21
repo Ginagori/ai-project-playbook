@@ -193,7 +193,7 @@ El agente iniciara el flujo de Discovery con preguntas sobre:
 - Funcionalidades principales
 - Escala esperada
 
-### Comandos disponibles (33 tools)
+### Comandos disponibles (37 tools)
 
 #### Project Management (13 tools)
 | Tool | Descripcion |
@@ -224,7 +224,7 @@ El agente iniciara el flujo de Discovery con preguntas sobre:
 | `playbook_generate_code` | Generar codigo |
 | `playbook_generate_tests` | Generar tests |
 
-#### Meta-Learning (6 tools)
+#### Meta-Learning (10 tools)
 | Tool | Descripcion |
 |------|-------------|
 | `playbook_complete_project` | Completar proyecto y guardar lecciones |
@@ -233,6 +233,10 @@ El agente iniciara el flujo de Discovery con preguntas sobre:
 | `playbook_suggest_stack` | Sugerencias de tech stack |
 | `playbook_learning_stats` | Estadisticas de aprendizaje del equipo |
 | `playbook_add_lesson` | Agregar leccion localmente (ver nota abajo) |
+| `playbook_vote_lesson` | Votar una leccion (up/down) para ajustar confianza |
+| `playbook_remove_lesson` | Eliminar una leccion de la base de conocimiento |
+| `playbook_lesson_stats` | Dashboard de estadisticas y calidad de lecciones |
+| `playbook_search_lessons` | Busqueda semantica de lecciones por significado |
 
 > **IMPORTANTE:** `playbook_add_lesson` solo guarda localmente (se pierde entre sesiones).
 > Para lecciones persistentes compartidas con el equipo, usa **`playbook_share_lesson`**.

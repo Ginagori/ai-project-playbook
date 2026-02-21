@@ -48,6 +48,15 @@ def _get_soul_engine():  # type: ignore[no-untyped-def]
     return None
 
 
+def _get_supabase_client():  # type: ignore[no-untyped-def]
+    """Get the Supabase client from the Memory Engine (for lesson sync)."""
+    if _engine_coordinator and hasattr(_engine_coordinator, "memory"):
+        memory = _engine_coordinator.memory  # type: ignore[union-attr]
+        if hasattr(memory, "_supabase"):
+            return memory._supabase
+    return None
+
+
 class OrchestratorState(BaseModel):
     """
     State that flows through the LangGraph orchestrator.
@@ -381,7 +390,7 @@ These will be incorporated into your project artifacts.
     # Auto-capture discovery lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
 
-    auto_capture_phase_lesson("discovery", project)
+    auto_capture_phase_lesson("discovery", project, supabase_client=_get_supabase_client())
 
     # Generate summary
     ts = project.tech_stack
@@ -459,7 +468,7 @@ def planning_node(state: OrchestratorState) -> OrchestratorState:
     # Auto-capture planning lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
 
-    auto_capture_phase_lesson("planning", project)
+    auto_capture_phase_lesson("planning", project, supabase_client=_get_supabase_client())
 
     # Build eval summary
     eval_summary = f"""
@@ -1196,7 +1205,7 @@ def roadmap_node(state: OrchestratorState) -> OrchestratorState:
     # Auto-capture roadmap lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
 
-    auto_capture_phase_lesson("roadmap", project)
+    auto_capture_phase_lesson("roadmap", project, supabase_client=_get_supabase_client())
 
     features_list = "\n".join(
         [f"{i + 1}. **{f.name}** - {f.description}" for i, f in enumerate(features)]
@@ -1760,7 +1769,7 @@ kubectl get pods -l app={project.objective.lower().replace(" ", "-")[:20]}
     # Auto-capture deployment lessons
     from agent.meta_learning.capture import auto_capture_phase_lesson
 
-    auto_capture_phase_lesson("deployment", project)
+    auto_capture_phase_lesson("deployment", project, supabase_client=_get_supabase_client())
 
     output = f"""
 ## Deployment Phase
