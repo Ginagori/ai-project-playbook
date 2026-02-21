@@ -178,13 +178,32 @@ class MemoryBridge:
                     if v[0].category in relevant_cats
                 }
 
+        # --- Effectiveness penalty ---
+        for key, (lesson, score) in list(all_lessons.items()):
+            eff = lesson.effectiveness_score
+            if eff is not None and eff < 0.3:
+                score *= 0.7  # Penalize low-effectiveness lessons
+            if lesson.times_surfaced >= 10 and lesson.times_helpful == 0:
+                score *= 0.5  # Heavy penalty for often-surfaced, never-helpful
+            all_lessons[key] = (lesson, score)
+
         # --- Rank and return ---
         ranked = sorted(
             all_lessons.values(),
             key=lambda pair: pair[1],
             reverse=True,
         )
-        return [lesson for lesson, _ in ranked[:limit]]
+        result = [lesson for lesson, _ in ranked[:limit]]
+
+        # --- Track surfacing (non-blocking) ---
+        try:
+            for lesson in result:
+                lesson.times_surfaced += 1
+            self._local_db._save()
+        except Exception:
+            pass
+
+        return result
 
     # ------------------------------------------------------------------
     # Specialized retrieval

@@ -140,6 +140,21 @@ class HeartbeatEngine(BaseEngine):
                     lines.append(f"  - [{sev}] {alert.title}: {alert.description}")
             lines.append("")
 
+        # Predictive alerts section
+        all_predictive: list[HeartbeatAlert] = []
+        for session_id in self._sessions_store:
+            pred = self.get_predictive_alerts(session_id)
+            all_predictive.extend(pred)
+
+        if all_predictive:
+            lines.append("### Predictive Alerts (from team knowledge)")
+            lines.append("")
+            for alert in all_predictive[:8]:
+                sev = alert.severity.value.upper()
+                lines.append(f"- [{sev}] **{alert.project_name}** — {alert.title}")
+                lines.append(f"  {alert.description[:150]}")
+            lines.append("")
+
         # Summary
         total = len(reports)
         critical = sum(1 for r in reports if r.health_score < 40)
@@ -148,6 +163,8 @@ class HeartbeatEngine(BaseEngine):
 
         lines.append("---")
         lines.append(f"**Total projects**: {total} | Healthy: {healthy} | Warning: {warning} | Critical: {critical}")
+        if all_predictive:
+            lines.append(f"**Predictive alerts**: {len(all_predictive)}")
 
         return "\n".join(lines)
 
@@ -231,6 +248,87 @@ class HeartbeatEngine(BaseEngine):
             alerts=alerts,
             health_score=max(0, min(100, health_score)),
         )
+
+    def get_predictive_alerts(self, session_id: str) -> list[HeartbeatAlert]:
+        """Generate predictive alerts based on project tech stack + knowledge base.
+
+        Uses MemoryBridge to find relevant gotchas and high-confidence lessons
+        for the project's specific tech stack and current phase.
+        """
+        if not self._initialized or not self._sessions_store:
+            return []
+
+        state = self._sessions_store.get(session_id)
+        if not state:
+            return []
+
+        project = state.project  # type: ignore[attr-defined]
+
+        # Skip completed projects
+        phase = project.current_phase
+        if isinstance(phase, Phase) and phase == Phase.COMPLETED:
+            return []
+
+        # Extract tech stack
+        ts = getattr(project, "tech_stack", None)
+        tech_list = []
+        if ts:
+            tech_list = [t for t in [
+                getattr(ts, "frontend", None),
+                getattr(ts, "backend", None),
+                getattr(ts, "database", None),
+            ] if t]
+
+        if not tech_list:
+            return []
+
+        # Import MemoryBridge locally to avoid circular imports
+        from agent.memory_bridge import MemoryBridge
+
+        bridge = MemoryBridge.get_instance()
+        objective = project.objective or "Unknown"
+        pt = getattr(project, "project_type", None)
+        pt_value = pt.value if pt else "saas"
+
+        phase_str = phase.value if isinstance(phase, Phase) else str(phase)
+
+        alerts: list[HeartbeatAlert] = []
+
+        try:
+            # Get phase-appropriate gotchas
+            gotchas = bridge.get_gotchas(pt_value, tech_list)
+            for gotcha in gotchas[:3]:
+                alerts.append(
+                    HeartbeatAlert(
+                        session_id=session_id,
+                        project_name=objective,
+                        severity=AlertSeverity.WARNING,
+                        title="Known Pitfall",
+                        description=gotcha,
+                        suggested_action="Review before proceeding",
+                    )
+                )
+
+            # Get high-confidence lessons for current phase
+            lessons = bridge.get_relevant_lessons(
+                pt_value, tech_list, phase=phase_str, limit=5,
+            )
+            for lesson in lessons[:3]:
+                if lesson.confidence >= 0.7:
+                    alerts.append(
+                        HeartbeatAlert(
+                            session_id=session_id,
+                            project_name=objective,
+                            severity=AlertSeverity.INFO,
+                            title=f"Tip: {lesson.title}",
+                            description=lesson.recommendation[:200],
+                            suggested_action="Consider applying this pattern",
+                        )
+                    )
+        except Exception as e:
+            print(f"HeartbeatEngine: Predictive alerts failed: {e}")
+
+        return alerts
 
     @staticmethod
     def _health_icon(score: float) -> str:

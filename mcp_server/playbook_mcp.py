@@ -10,6 +10,7 @@ Supports Supabase for shared team knowledge base.
 import asyncio
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -339,6 +340,19 @@ async def continue_project(session_id: str) -> str:
     features_count = len(project.features)
     current_feature = project.current_feature_index + 1 if project.features else "N/A"
 
+    # Predictive alerts from Heartbeat
+    reminders = ""
+    try:
+        if _coordinator and _coordinator.heartbeat:
+            pred_alerts = _coordinator.heartbeat.get_predictive_alerts(session_id)
+            if pred_alerts:
+                reminders = "\n### Reminders (from team knowledge)\n"
+                for alert in pred_alerts[:3]:
+                    reminders += f"- **{alert.title}**: {alert.description[:120]}\n"
+                reminders += "\n"
+    except Exception:
+        pass
+
     return f"""
 ## Continuing Session: {session_id}
 
@@ -352,7 +366,7 @@ async def continue_project(session_id: str) -> str:
 - Tech Stack: {tech_info}
 - Features: {features_count} defined
 - Current Feature: {current_feature}
-
+{reminders}
 Reply with "continue" to proceed with the current phase.
 
 ---
@@ -1856,6 +1870,88 @@ async def vote_lesson(title: str, vote: str = "up") -> str:
 """
 
 
+@mcp.tool(name="playbook_rate_lesson")
+async def rate_lesson(title: str, helpful: bool = True) -> str:
+    """
+    Rate a lesson's effectiveness after it was surfaced.
+
+    Use this to provide feedback on whether a lesson was actually useful
+    in practice. Over time, this improves lesson ranking — helpful lessons
+    rise, unhelpful ones decay.
+
+    Args:
+        title: The lesson title (partial match, case-insensitive)
+        helpful: True if the lesson was useful, False if not
+
+    Returns:
+        Confirmation with updated effectiveness metrics
+    """
+    await _ensure_engines_initialized()
+
+    local_db = get_lessons_db()
+    found = False
+    lesson_info = None
+
+    for lesson in local_db.get_lessons():
+        if title.lower() in lesson.title.lower():
+            if helpful:
+                lesson.times_helpful += 1
+                lesson.confidence = min(1.0, lesson.confidence + 0.02)
+            else:
+                lesson.times_not_helpful += 1
+                lesson.confidence = max(0.1, lesson.confidence - 0.03)
+            lesson.updated_at = datetime.utcnow()
+            lesson_info = lesson
+            found = True
+            break
+
+    if found:
+        local_db._save()
+
+    # Update Supabase too
+    supabase_updated = False
+    if SUPABASE_ENABLED and db and lesson_info:
+        try:
+            result = (
+                db.client.table("lessons_learned")
+                .select("id, confidence")
+                .eq("team_id", db.team_id)
+                .ilike("title", f"%{title}%")
+                .execute()
+            )
+            if result.data:
+                row = result.data[0]
+                delta = 0.02 if helpful else -0.03
+                new_conf = max(0.1, min(1.0, (row.get("confidence", 0.5) or 0.5) + delta))
+                db.client.table("lessons_learned").update({
+                    "confidence": new_conf,
+                }).eq("id", row["id"]).execute()
+                supabase_updated = True
+        except Exception as e:
+            print(f"Supabase rate update failed: {e}")
+
+    if not found and not supabase_updated:
+        return f"## Not Found\n\nNo lesson matching '{title}'."
+
+    rating = "helpful" if helpful else "not helpful"
+    eff = lesson_info.effectiveness_score if lesson_info else None
+    eff_str = f"{eff:.0%}" if eff is not None else "not enough data"
+
+    sources = []
+    if found:
+        sources.append("local")
+    if supabase_updated:
+        sources.append("Supabase")
+
+    return f"""## Rating Recorded
+
+**{lesson_info.title if lesson_info else title}** — rated as **{rating}**.
+**Confidence:** {lesson_info.confidence:.0%} | **Effectiveness:** {eff_str}
+**Surfaced:** {lesson_info.times_surfaced if lesson_info else '?'}x | **Helpful:** {lesson_info.times_helpful if lesson_info else '?'}x | **Not helpful:** {lesson_info.times_not_helpful if lesson_info else '?'}x
+**Updated in:** {' + '.join(sources)}
+"""
+
+
 @mcp.tool(name="playbook_remove_lesson")
 async def remove_lesson(title: str) -> str:
     """
@@ -1938,6 +2034,33 @@ async def lesson_stats() -> str:
         output += "\n### Most Frequent\n"
         for entry in stats["top_lessons"]:
             output += f"- {entry['title']} (x{entry['frequency']})\n"
+
+    # Effectiveness section
+    all_lessons = local_db.get_lessons()
+    surfaced = [l for l in all_lessons if l.times_surfaced > 0]
+    rated = [l for l in all_lessons if l.times_helpful + l.times_not_helpful > 0]
+
+    if surfaced:
+        total_surfaced = sum(l.times_surfaced for l in surfaced)
+        output += f"\n### Effectiveness\n"
+        output += f"- **Lessons surfaced at least once:** {len(surfaced)}\n"
+        output += f"- **Total surfacing events:** {total_surfaced}\n"
+        output += f"- **Lessons with ratings:** {len(rated)}\n"
+
+        # Most effective
+        effective = [(l, l.effectiveness_score) for l in rated if l.effectiveness_score is not None]
+        effective.sort(key=lambda x: x[1], reverse=True)
+        if effective:
+            output += "\n**Most effective:**\n"
+            for l, eff in effective[:5]:
+                output += f"- {l.title} ({eff:.0%} helpful, surfaced {l.times_surfaced}x)\n"
+
+        # Candidates for removal (often surfaced, never helpful)
+        stale = [l for l in surfaced if l.times_surfaced >= 10 and l.times_helpful == 0]
+        if stale:
+            output += f"\n**Candidates for review** (surfaced 10+ times, never rated helpful):\n"
+            for l in stale[:5]:
+                output += f"- {l.title} (surfaced {l.times_surfaced}x)\n"
 
     return output
 

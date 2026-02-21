@@ -285,13 +285,14 @@ refactor: Restructure code
 
 ## Current State
 
-- **37 MCP Tools** functional
+- **38 MCP Tools** functional
 - **Archie**: Core Soul + 4-Engine Architecture (Soul, Memory, Router, Heartbeat)
 - **Supabase** integration complete
 - **Semantic search** via pgvector embeddings (hybrid retrieval: semantic + keyword)
 - **Project sync** between team members
 - **Repository linking** for projects
-- **Meta-learning** from completed projects (lesson voting, cleanup, semantic search)
+- **Meta-learning** from completed projects (lesson voting, cleanup, semantic search, effectiveness tracking)
+- **Proactive memory**: team preferences in artifacts, predictive heartbeat alerts
 - **CI protection** for Core Soul integrity
 
 ---

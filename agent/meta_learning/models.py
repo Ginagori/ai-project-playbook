@@ -51,6 +51,11 @@ class LessonLearned(BaseModel):
     upvotes: int = Field(default=0)
     downvotes: int = Field(default=0)
 
+    # Effectiveness tracking
+    times_surfaced: int = Field(default=0)
+    times_helpful: int = Field(default=0)
+    times_not_helpful: int = Field(default=0)
+
     # Metadata
     project_types: list[str] = Field(default_factory=list)  # Where this applies
     tech_stacks: list[str] = Field(default_factory=list)  # Related tech
@@ -59,6 +64,14 @@ class LessonLearned(BaseModel):
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @property
+    def effectiveness_score(self) -> float | None:
+        """Effectiveness ratio based on user ratings. None if insufficient data."""
+        total = self.times_helpful + self.times_not_helpful
+        if total < 2:
+            return None
+        return self.times_helpful / total
 
     def matches_context(self, project_type: str, tech_stack: list[str]) -> float:
         """

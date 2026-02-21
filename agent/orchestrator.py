@@ -342,6 +342,27 @@ I need to understand a few things to recommend the best approach.
                     f"- **{ls.title}**: {ls.recommendation}" for ls in similar[:3]
                 )
                 project.discovery_context["similar_info"] = similar_info
+                # Check for team preferences to mention
+                pref_hints = ""
+                try:
+                    if memory:
+                        active_prefs = memory.get_active_preferences()
+                        if active_prefs:
+                            pref_lines = "\n".join(
+                                f"- {p.content}" for p in active_prefs[:3]
+                            )
+                            pref_hints = f"""
+
+### Team Preferences
+
+Based on our accumulated experience:
+
+{pref_lines}
+
+"""
+                except Exception:
+                    pass
+
                 similar_section = f"""
 ### Insights from Past Projects
 
@@ -350,7 +371,7 @@ I found {len(similar)} relevant lessons from similar projects:
 {similar_info}
 
 These will be incorporated into your project artifacts.
-
+{pref_hints}
 ---
 
 """
@@ -706,6 +727,20 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
     except Exception as e:
         print(f"[Archie] CLAUDE.md memory enrichment failed: {e}")
 
+    # --- Team preferences from Memory Engine ---
+    preferences_section = ""
+    try:
+        memory = _get_memory_engine()
+        if memory:
+            active_prefs = memory.get_active_preferences()
+            if active_prefs:
+                preferences_section = "\n## Team Preferences\n\n"
+                for pref in active_prefs[:5]:
+                    badge = "[approved]" if pref.status == "approved" else f"[{pref.confidence:.0%}]"
+                    preferences_section += f"- {badge} {pref.content}\n"
+    except Exception:
+        pass
+
     claude_md = f"""# {project.objective}
 {domain_section}
 ## Core Principles
@@ -739,7 +774,7 @@ async def get_user(user_id: str, service: UserService = Depends()) -> UserRespon
 - {"Use pytest markers: @pytest.mark.unit, @pytest.mark.integration" if is_python else "Use vitest describe/it pattern with test.each for parameterized tests"}
 
 ## Common Patterns
-{extra_patterns}{lessons_section}{gotchas_section}"""
+{extra_patterns}{lessons_section}{gotchas_section}{preferences_section}"""
 
     return claude_md
 
@@ -855,6 +890,21 @@ def _generate_prd(project: ProjectState) -> str:
     except Exception as e:
         print(f"[Archie] PRD memory enrichment failed: {e}")
 
+    # --- Team tech preferences for PRD ---
+    tech_preferences_section = ""
+    try:
+        memory = _get_memory_engine()
+        if memory:
+            active_prefs = memory.get_active_preferences()
+            tech_prefs = [p for p in active_prefs if p.preference_type == "tech_stack"]
+            if tech_prefs:
+                tech_preferences_section = "\n## Team Technology Preferences\n\n"
+                for pref in tech_prefs[:3]:
+                    source = f" (from: {pref.source_project})" if pref.source_project else ""
+                    tech_preferences_section += f"- {pref.content}{source}\n"
+    except Exception:
+        pass
+
     prd = f"""# Product Requirements Document
 
 ## Executive Summary
@@ -888,7 +938,7 @@ Build a {pt.value if pt else "application"} that {project.objective}.
 - **Frontend**: {ts.frontend or "N/A"}
 - **Backend**: {ts.backend or "N/A"}
 - **Database**: {ts.database or "N/A"}
-{security_section}{gotchas_section}{lessons_section}"""
+{security_section}{gotchas_section}{lessons_section}{tech_preferences_section}"""
 
     return prd
 
