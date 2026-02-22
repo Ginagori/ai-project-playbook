@@ -11,17 +11,18 @@
 - 4 capas: Orchestration, Execution, Validation, Safety
 - Triple-Layer Soul + 4 Engines (Soul, Memory, Router, Heartbeat)
 - PIV Loop (Plan, Implement, Validate)
-- Defense-in-Depth Security
+- Defense-in-Depth Security (6 subsistemas)
 - Stack: Python 3.11+, uv, Claude Agent SDK, Pydantic AI, Supabase (pgvector), Bandit/Semgrep
 
 ## Waves de Implementacion
 
-### Wave 1 — Foundation [EN PROGRESO]
-- [x] PRP 01: Project Setup + Core Soul — **COMPLETADO** (commit c766fc1)
-  - 22 files, 3004 insertions, 26/26 tests, ruff+mypy clean
-- [ ] PRP 02: Security Foundation (Large, 7 tasks) — **SIGUIENTE**
+### Wave 1 — Foundation [COMPLETADA]
+- [x] PRP 01: Project Setup + Core Soul — commit `c766fc1`
+- [x] PRP 02: Security Foundation — commit `89251f8`
+  - InputTagger, CommandExecutor, OutputSanitizer, EgressFilter, AuditLogger, SandboxManager
+  - SecurityCoordinator (central hub)
 
-### Wave 2 — Execution Core [BLOQUEADA por Wave 1]
+### Wave 2 — Execution Core [DESBLOQUEADA — SIGUIENTE]
 - [ ] PRP 03: PRP Executor (Large, 4 tasks)
 - [ ] PRP 04: PIV Loop Automation (Medium, 3 tasks)
 
@@ -37,8 +38,9 @@
 
 ## Totales
 - 10 PRPs, 41 tasks
-- PRP 01: 4/4 tasks COMPLETADOS
-- Progreso total: ~10% (1/10 PRPs)
+- PRP 01 + PRP 02: 11/41 tasks COMPLETADOS
+- Progreso total: ~20% (2/10 PRPs)
+- Tests: 135 passing (0.46s)
 
 ## Ultima Actualizacion
-- 2026-02-22: PRP 01 COMPLETADO. 26/26 tests. Pushed to GitHub (c766fc1). Siguiente: PRP 02.
+- 2026-02-22: Wave 1 COMPLETADA. 135/135 tests. Siguiente: Wave 2 (PRP 03 PRP Executor).
