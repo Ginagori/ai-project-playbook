@@ -5,6 +5,7 @@
 - **Ruta**: Proyectos/archie-agent
 - **Proposito**: Capa de ejecucion autonoma de Archie, el AI PM de Nivanta AI
 - **Playbook Session**: 3225865e (supervised, compartido con equipo)
+- **GitHub**: Ginagori/archie-agent (private)
 
 ## Arquitectura
 - 4 capas: Orchestration, Execution, Validation, Safety
@@ -15,9 +16,10 @@
 
 ## Waves de Implementacion
 
-### Wave 1 — Foundation [NO INICIADA]
-- [ ] PRP 01: Project Setup + Core Soul (Medium, 4 tasks)
-- [ ] PRP 02: Security Foundation (Large, 7 tasks)
+### Wave 1 — Foundation [EN PROGRESO]
+- [x] PRP 01: Project Setup + Core Soul — **COMPLETADO** (commit c766fc1)
+  - 22 files, 3004 insertions, 26/26 tests, ruff+mypy clean
+- [ ] PRP 02: Security Foundation (Large, 7 tasks) — **SIGUIENTE**
 
 ### Wave 2 — Execution Core [BLOQUEADA por Wave 1]
 - [ ] PRP 03: PRP Executor (Large, 4 tasks)
@@ -35,16 +37,8 @@
 
 ## Totales
 - 10 PRPs, 41 tasks
-- ~50 archivos Python por crear
-- ~30 archivos de test por crear
-- Implementacion: 0% (cero archivos .py creados)
-
-## Archivos Existentes
-- CLAUDE.md (arquitectura completa)
-- .playbook/execution-order.md (grafo de dependencias)
-- .playbook/prps/01-10 (todos los PRPs)
-- agent/ (vacia)
-- tests/ (vacia)
+- PRP 01: 4/4 tasks COMPLETADOS
+- Progreso total: ~10% (1/10 PRPs)
 
 ## Ultima Actualizacion
-- 2026-02-22: Sesion creada en playbook. Memoria configurada. Listo para Wave 1.
+- 2026-02-22: PRP 01 COMPLETADO. 26/26 tests. Pushed to GitHub (c766fc1). Siguiente: PRP 02.
