@@ -11,6 +11,9 @@
       "frequency": 1,
       "upvotes": 1,
       "downvotes": 1,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -38,6 +41,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -65,6 +71,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -92,6 +101,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 1,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -118,6 +130,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -145,6 +160,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -172,6 +190,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -198,6 +219,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -223,6 +247,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -248,6 +275,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -273,6 +303,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -300,6 +333,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "multi_agent"
       ],
@@ -325,6 +361,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "multi_agent"
       ],
@@ -350,6 +389,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -375,6 +417,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "api"
       ],
@@ -402,6 +447,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "api"
       ],
@@ -427,6 +475,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -452,6 +503,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -477,6 +531,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -503,6 +560,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -529,6 +589,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -553,6 +616,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -575,9 +641,12 @@
       "context": "Manually added lesson",
       "recommendation": "Cuando un campo deja de ser relevante: 1) Eliminar de la UI (formularios, tablas, páginas de detalle). 2) Eliminar columna de la BD con ALTER TABLE DROP COLUMN. 3) Actualizar tipos TypeScript. 4) Remover imports de constantes relacionadas.",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 1,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -604,6 +673,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -628,6 +700,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -652,6 +727,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -676,6 +754,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -700,6 +781,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -722,9 +806,12 @@
       "context": "Manually added lesson",
       "recommendation": "Implementar patrón sobrio con Tailwind: className=\"group\" en Card, bg-muted group-hover:bg-{color}-100 en el icono container, text-muted-foreground group-hover:text-{color}-600 en iconos y valores. Usar colores fijos solo para métricas que siempre representan lo mismo (ingresos=verde, costos=rojo).",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -753,6 +840,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -778,6 +868,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -803,6 +896,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -827,6 +923,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -851,6 +950,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -875,6 +977,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -899,6 +1004,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "api"
       ],
@@ -925,6 +1033,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -950,6 +1061,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -977,6 +1091,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -999,9 +1116,12 @@
       "context": "Manually added lesson",
       "recommendation": "Usar Supabase como backend-as-a-service: 1) Auth integrado con Next.js middleware para proteger rutas, 2) PostgreSQL para datos estructurados (conversations, messages, leads, insights), 3) Row Level Security para multi-tenancy, 4) Realtime opcional para actualizaciones en vivo. Separar SUPABASE_ANON_KEY (frontend) de SUPABASE_SERVICE_KEY (backend).",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1030,6 +1150,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -1052,9 +1175,12 @@
       "context": "Manually added lesson",
       "recommendation": "Crear UNA sola instancia del chat widget a nivel de layout o pagina principal. Usar estado global o contexto para controlar apertura/cierre. Los botones CTA en diferentes secciones solo deben disparar la apertura del chat existente, no crear nuevas instancias. Opcionalmente, pasar un mensaje inicial al abrir (autoSendMessage prop) para contextualizar la conversacion.",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1082,6 +1208,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "api"
       ],
@@ -1106,9 +1235,12 @@
       "context": "Manually added lesson",
       "recommendation": "Definir colores de marca en tailwind.config.js como variables semanticas: nivanta-primary (#0C5469), nivanta-secondary (#0A9A97), nivanta-gray (#696969). Documentar en CLAUDE.md o design-system.md el uso de cada color. Usar siempre las variables semanticas (bg-nivanta-primary) en vez de colores genericos (bg-teal-600). Incluir tipografia (Montserrat) y espaciado consistente.",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 1,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1136,6 +1268,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1157,9 +1292,12 @@
       "context": "Manually added lesson",
       "recommendation": "Configuracion optima: 1) Netlify para frontends - crear 2 sitios apuntando al mismo repo, cada uno con diferente base directory (web/ y dashboard/). 2) Railway para backend - especificar Root Directory: api y Start command: uvicorn src.main:app --host 0.0.0.0 --port $PORT. 3) Orden de deploy: primero API, luego frontends. 4) Actualizar NEXT_PUBLIC_API_URL en frontends para apuntar a URL de produccion de API.",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1185,9 +1323,12 @@
       "context": "Manually added lesson",
       "recommendation": "Usar middleware.ts en la raiz del proyecto dashboard. Verificar sesion de Supabase antes de cada request a rutas protegidas. Redirigir a /login si no hay sesion valida. Excluir rutas publicas (login, assets). Ejemplo: export const config = { matcher: ['/((?!login|_next/static|favicon.ico).*)'] }. Esto garantiza proteccion consistente sin modificar cada pagina.",
       "confidence": 0.7,
-      "frequency": 1,
+      "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1216,6 +1357,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "agent"
       ],
@@ -1242,6 +1386,9 @@
       "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "platform"
       ],
@@ -1265,25 +1412,28 @@
       "description": "Selected react-vite + fastapi + postgresql-supabase for saas project: CUMPLE SST - Plataforma SaaS de gestión de Seguridad y Salud en el Trabajo para ",
       "context": "Discovery phase for saas",
       "recommendation": "Consider react-vite + fastapi + postgresql-supabase for similar saas projects",
-      "confidence": 0.8000000000000002,
-      "frequency": 5,
+      "confidence": 0.9500000000000001,
+      "frequency": 13,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 1,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
       "tech_stacks": [
-        "fastapi",
         "react-vite",
-        "postgresql-supabase"
+        "postgresql-supabase",
+        "fastapi"
       ],
       "tags": [
         "discovery",
-        "auto-captured",
-        "tech-stack"
+        "tech-stack",
+        "auto-captured"
       ],
       "created_at": "2026-02-13T04:26:48.419688",
-      "updated_at": "2026-02-19T23:17:41.545436"
+      "updated_at": "2026-02-21T22:00:16.069226"
     },
     {
       "id": "7875db1c-2068-4000-8fff-1615f4af3e39",
@@ -1296,6 +1446,9 @@
       "frequency": 4,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1319,6 +1472,9 @@
       "frequency": 4,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 1,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [],
       "tech_stacks": [],
       "tags": [
@@ -1340,6 +1496,9 @@
       "frequency": 3,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1363,6 +1522,9 @@
       "frequency": 2,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "saas"
       ],
@@ -1386,6 +1548,9 @@
       "frequency": 1,
       "upvotes": 0,
       "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
       "project_types": [
         "api"
       ],
@@ -1397,7 +1562,112 @@
       ],
       "created_at": "2026-02-19T23:12:32.151272",
       "updated_at": "2026-02-19T23:12:32.151272"
+    },
+    {
+      "id": "c22ec0dc-33d6-48d1-92ba-b48323abfcb2",
+      "category": "architecture",
+      "title": "Vertical Slice Architecture",
+      "description": "Organized code by feature rather than layer",
+      "context": "Projects with multiple independent features",
+      "recommendation": "Use vertical slice for feature-rich applications",
+      "confidence": 0.8,
+      "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
+      "project_types": [
+        "saas"
+      ],
+      "tech_stacks": [],
+      "tags": [
+        "architecture",
+        "vertical-slice"
+      ],
+      "created_at": "2026-02-21T17:59:57.908722",
+      "updated_at": "2026-02-21T17:59:57.908722"
+    },
+    {
+      "id": "965becb9-78b4-44bf-841f-5c0c13729f8f",
+      "category": "workflow",
+      "title": "CLAUDE.md as Project Foundation",
+      "description": "Having clear global rules improved development",
+      "context": "Starting any AI-assisted project",
+      "recommendation": "Create CLAUDE.md before writing any code",
+      "confidence": 0.9,
+      "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
+      "project_types": [],
+      "tech_stacks": [],
+      "tags": [
+        "workflow",
+        "claude-md"
+      ],
+      "created_at": "2026-02-21T17:59:57.908722",
+      "updated_at": "2026-02-21T17:59:57.908722"
+    },
+    {
+      "id": "1b0eb2b3-84a5-4962-98e6-01752d31f9c4",
+      "category": "workflow",
+      "title": "PRD Before Implementation",
+      "description": "Clear product requirements reduced rework",
+      "context": "Planning phase",
+      "recommendation": "Write comprehensive PRD before roadmap",
+      "confidence": 0.85,
+      "frequency": 1,
+      "upvotes": 0,
+      "downvotes": 0,
+      "times_surfaced": 0,
+      "times_helpful": 0,
+      "times_not_helpful": 0,
+      "project_types": [],
+      "tech_stacks": [],
+      "tags": [
+        "workflow",
+        "planning"
+      ],
+      "created_at": "2026-02-21T17:59:57.908722",
+      "updated_at": "2026-02-21T17:59:57.908722"
     }
   ],
-  "outcomes": []
+  "outcomes": [
+    {
+      "id": "46737fcd-8791-4f30-872c-badca1b4ad9e",
+      "project_id": "1673b365",
+      "objective": "Reparación de sistema contable Excel para Parcelación (23 parcelas) - Copropiedad Ley 675 Colombia. Proyecto aprobado por $1,400,000 COP + $500,000 adicional por ejecución presupuestal. Incluye: 1) Reparar archivo REGISTROS CONTABLES (8,869 fórmulas con vínculos externos rotos), 2) Reparar archivo CARTERA DETALLADA, 3) Reparar EJECUCIÓN PRESUPUESTAL, 4) Asegurar cumplimiento formato DIAN 1001 (pagos a terceros). Cliente: Ana Isabel Vélez (administradora). Auditor: Carmen. Estamos en fase de EJECUCIÓN.",
+      "project_type": "saas",
+      "tech_stack": {
+        "frontend": "react-vite",
+        "backend": "fastapi",
+        "database": "postgresql-supabase"
+      },
+      "features_planned": [],
+      "features_completed": [],
+      "outcome": "abandoned",
+      "success_score": 0.25,
+      "what_worked": [
+        "Generated comprehensive CLAUDE.md",
+        "Created detailed PRD",
+        "All features completed"
+      ],
+      "what_didnt_work": [],
+      "surprises": [],
+      "total_iterations": 0,
+      "phases_completed": [
+        "discovery",
+        "planning",
+        "roadmap"
+      ],
+      "files_created": 0,
+      "started_at": "2026-02-21T17:59:57.903440",
+      "completed_at": "2026-02-21T17:59:57.903440",
+      "user_rating": 4,
+      "user_notes": "Proyecto entregado exitosamente. Reparación de sistema contable Excel para Parcelación (23 parcelas) - Copropiedad Ley 675 Colombia. Incluía reparación de REGISTROS CONTABLES (8,869 fórmulas), CARTERA DETALLADA y EJECUCIÓN PRESUPUESTAL."
+    }
+  ]
 }
